@@ -233,13 +233,14 @@ tr:hover td{background:var(--bg-secondary)}
     <select id="cult-filter" onchange="renderCultivos()"><option value="">Todos los estados</option><option>Activo</option><option>Pase pendiente</option><option>Criopreservado</option><option>Descartado</option></select>
     <button class="ab-btn" onclick="openCultModal(-1)">+ Nuevo cultivo</button>
   </div>
-  <div class="tw"><table>
+  <div class="tw" style="overflow-x:auto"><table style="min-width:900px">
     <thead><tr>
-      <th style="width:6%">ID</th><th style="width:9%">Línea</th><th style="width:5%">Pase</th>
-      <th style="width:7%">Días en cultivo</th><th style="width:9%">Inicio cultivo</th>
-      <th style="width:9%">Últ. actualiz.</th><th style="width:8%">Confl. actual</th>
-      <th style="width:8%">Frec.</th><th style="width:9%">Responsable cultivo</th>
-      <th style="width:9%">Resp. últ. pase</th><th style="width:7%">Estado</th><th style="width:6%">Hist.</th><th style="width:5%"></th>
+      <th style="width:6%">ID</th><th style="width:8%">Línea</th><th style="width:4%">Pase</th>
+      <th style="width:6%">Días</th><th style="width:8%">Inicio</th>
+      <th style="width:8%">Últ. actualiz.</th><th style="width:7%">Confl.</th>
+      <th style="width:8%">Medio</th><th style="width:7%">Placa</th>
+      <th style="width:7%">Frec.</th><th style="width:8%">Responsable</th>
+      <th style="width:8%">Resp. pase</th><th style="width:6%">Estado</th><th style="width:5%">H</th><th style="width:4%"></th>
     </tr></thead>
     <tbody id="cult-tbody"></tbody>
   </table></div>
@@ -266,7 +267,16 @@ tr:hover td{background:var(--bg-secondary)}
         <div class="field"><label>Fecha último cambio de medio</label><input id="cf-fultcambio" type="date"></div>
         <div class="form-sec">Condiciones de cultivo</div>
         <div class="field"><label>Medio de cultivo</label><input id="cf-medio" type="text"></div>
-        <div class="field"><label>Tipo de frasco</label><select id="cf-frasco"><option>T25</option><option>T75</option><option>T150</option><option>6-well</option><option>12-well</option><option>24-well</option><option>96-well</option><option>Biorreactor</option></select></div>
+        <div class="field"><label>Placa / frasco</label>
+          <select id="cf-frasco" onchange="toggleOtrasPlaca()">
+            <option>T25</option><option>T75</option><option>T150</option>
+            <option>P60</option><option>P100</option><option>P150</option>
+            <option>6-well</option><option>12-well</option><option>24-well</option>
+            <option>48-well</option><option>96-well</option>
+            <option>Biorreactor</option><option>Otras</option>
+          </select>
+          <input id="cf-frasco-otras" type="text" placeholder="Especifica el tipo de placa/frasco" style="display:none;margin-top:4px">
+        </div>
         <div class="field"><label>Concentración siembra inicial</label><input id="cf-concsiem" type="text" placeholder="1×10⁶ céls/mL"></div>
         <div class="field"><label>Frec. cambio medio</label><select id="cf-frec"><option>Diario</option><option>Cada 2 días</option><option>Cada 3 días</option><option>Semanal</option></select></div>
         <div class="field"><label>Confluencia en últ. cambio (%)</label><input id="cf-conflcambio" type="number" min="0" max="100"></div>
@@ -899,21 +909,37 @@ function diasDesde(fecha){
 }
 
 // ── Cultivos ────────────────────────────────────
+function fmtDate(d){
+  if(!d||d==='—')return'—';
+  var parts=d.split('-');
+  if(parts.length===3)return parts[2]+'/'+parts[1]+'/'+parts[0];
+  return d;
+}
+
+function toggleOtrasPlaca(){
+  var sel=document.getElementById('cf-frasco');
+  var inp=document.getElementById('cf-frasco-otras');
+  if(inp)inp.style.display=sel.value==='Otras'?'block':'none';
+}
+
 function renderCultivos() {
   var f = document.getElementById('cult-filter').value;
   var data = f ? (db.cultivos||[]).filter(function(c){return c.estado===f;}) : (db.cultivos||[]);
   var tb = document.getElementById('cult-tbody'); tb.innerHTML = '';
-  if (!data.length) { tb.innerHTML = emptyRow(13); return; }
+  if (!data.length) { tb.innerHTML = emptyRow(15); return; }
   data.forEach(function(c) {
     var ci = db.cultivos.indexOf(c);
     var cc = c.confl>=80?'color:var(--text-danger);font-weight:500':c.confl>=60?'color:var(--text-warning)':'';
     var dias = diasDesde(c.finicio);
+    var frasco = c.frasco==='Otras'&&c.frascoOtras ? c.frascoOtras : (c.frasco||'—');
     var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
     tr.innerHTML = '<td>'+c.id+'</td><td><strong>'+c.linea+'</strong></td><td>'+c.pase+'</td>'
       +'<td style="font-weight:500;color:var(--text-info)">'+dias+'</td>'
-      +'<td>'+(c.finicio||'—')+'</td>'
-      +'<td>'+(c.fultact||'—')+'</td>'
+      +'<td>'+fmtDate(c.finicio)+'</td>'
+      +'<td>'+fmtDate(c.fultact)+'</td>'
       +'<td><span style="'+cc+'">'+c.confl+'%</span></td>'
+      +'<td style="max-width:80px;overflow:hidden;text-overflow:ellipsis" title="'+(c.medio||'')+'">'+( c.medio||'—')+'</td>'
+      +'<td>'+frasco+'</td>'
       +'<td>'+c.frec+'</td>'
       +'<td>'+c.resp+'</td>'
       +'<td>'+(c.resppase||'—')+'</td>'
@@ -932,12 +958,34 @@ function showCultHistorico(ci){
   var c=db.cultivos[ci];
   var hist=(db.cultivos_historico||[]).filter(function(h){return h.cultivo_id===c.id;});
   var el=document.getElementById('cult-historico-content');
-  if(!hist.length){el.innerHTML='<div class="empty-state">Sin entradas en el histórico todavía. Cada vez que guardes el cultivo se registra una entrada.</div>';return;}
-  var html='<div style="overflow-x:auto"><table style="table-layout:auto;width:100%"><thead><tr>'
-    +'<th>Fecha actualización</th><th>Realizado por</th><th>Pase</th><th>Confluencia</th><th>Estado</th><th>Conc. siembra</th><th>Notas</th>'
-    +'</tr></thead><tbody>';
-  hist.slice().reverse().forEach(function(h){
-    html+='<tr><td>'+h.fecha+'</td><td>'+h.quien+'</td><td>'+h.pase+'</td><td>'+h.confl+'%</td><td>'+badge(h.estado)+'</td><td>'+(h.concsiem||'—')+'</td><td>'+(h.notas||'—')+'</td></tr>';
+  if(!hist.length){el.innerHTML='<div class="empty-state">Sin entradas en el histórico todavía.<br>Cada vez que guardes el cultivo se registra una nueva entrada con todos los datos de ese momento.</div>';return;}
+  var fields=[
+    ['Fecha actualización','fecha'],['Realizado por','quien'],
+    ['ID','id'],['Línea celular','linea'],['Pase','pase'],
+    ['Criovial origen','criovial'],['Cultivo origen','origen'],
+    ['Fecha inicio','finicio'],['Fecha último pase','fultpase'],
+    ['Fecha últ. cambio medio','fultcambio'],
+    ['Medio de cultivo','medio'],['Placa / frasco','frasco'],
+    ['Conc. siembra inicial','concsiem'],
+    ['Frec. cambio medio','frec'],
+    ['Confl. en últ. cambio (%)','conflcambio'],
+    ['Confluencia actual (%)','confl'],
+    ['Responsable cultivo','resp'],['Resp. últ. pase','resppase'],
+    ['Estado','estado'],['Notas','notas']
+  ];
+  var html='<div style="overflow-x:auto"><table style="table-layout:auto;width:100%;font-size:11px"><thead><tr>';
+  fields.forEach(function(f){html+='<th style="white-space:nowrap;padding:6px 8px">'+f[0]+'</th>';});
+  html+='</tr></thead><tbody>';
+  hist.slice().reverse().forEach(function(h,idx){
+    html+='<tr style="background:'+(idx%2===0?'var(--color-background-secondary)':'')+'">';
+    fields.forEach(function(f){
+      var val=h[f[1]]!==undefined&&h[f[1]]!==''?h[f[1]]:'—';
+      if(f[1]==='estado')val=badge(val);
+      else if(f[1]==='confl'||f[1]==='conflcambio')val=(val!=='—'?val+'%':val);
+      else if(['finicio','fultpase','fultcambio','fecha'].indexOf(f[1])>-1&&val!=='—')val=val.replace(/(\d{4})-(\d{2})-(\d{2})/,'$3/$2/$1');
+      html+='<td style="padding:5px 8px;white-space:nowrap">'+val+'</td>';
+    });
+    html+='</tr>';
   });
   html+='</tbody></table></div>';
   el.innerHTML=html;
@@ -960,6 +1008,8 @@ function openCultModal(idx) {
     document.getElementById('cf-fultcambio').value=c.fultcambio;
     document.getElementById('cf-medio').value=c.medio;
     document.getElementById('cf-frasco').value=c.frasco;
+    var otrasInp=document.getElementById('cf-frasco-otras');
+    if(otrasInp){otrasInp.value=c.frascoOtras||'';otrasInp.style.display=c.frasco==='Otras'?'block':'none';}
     document.getElementById('cf-concsiem').value=c.concsiem||'';
     document.getElementById('cf-frec').value=c.frec;
     document.getElementById('cf-conflcambio').value=c.conflcambio;
@@ -990,6 +1040,7 @@ function saveCultivo() {
     fultcambio:document.getElementById('cf-fultcambio').value,
     medio:document.getElementById('cf-medio').value,
     frasco:document.getElementById('cf-frasco').value,
+    frascoOtras:document.getElementById('cf-frasco-otras')?document.getElementById('cf-frasco-otras').value:'',
     concsiem:document.getElementById('cf-concsiem').value,
     frec:document.getElementById('cf-frec').value,
     conflcambio:parseInt(document.getElementById('cf-conflcambio').value)||0,
@@ -1001,17 +1052,11 @@ function saveCultivo() {
   };
   if (idx >= 0) db.cultivos[idx] = c; else db.cultivos.push(c);
   if(!db.cultivos_historico)db.cultivos_historico=[];
-  db.cultivos_historico.push({
+  db.cultivos_historico.push(Object.assign({},c,{
     cultivo_id:c.id,
     fecha:c.fultact+' '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
-    quien:c.resppase||c.resp||'—',
-    pase:c.pase,
-    confl:c.confl,
-    estado:c.estado,
-    concsiem:c.concsiem,
-    fultcambio:c.fultcambio,
-    notas:c.notas
-  });
+    quien:c.resppase||c.resp||'—'
+  }));
   closeModal('cult-modal'); saveDB(); renderAll();
 }
 
@@ -1029,9 +1074,9 @@ function renderOrganoides() {
     var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
     tr.innerHTML = '<td>'+o.id+'</td><td><strong>'+o.tejido+'</strong></td><td>'+o.origen+'</td>'
       +'<td style="font-weight:500;color:var(--text-info)">'+dias+'</td>'
-      +'<td>'+(o.finicio||'—')+'</td>'
+      +'<td>'+fmtDate(o.finicio)+'</td>'
       +'<td>'+o.diametro+'</td>'
-      +'<td><span style="'+pc+'">'+(o.ultcambio||'—')+'</span></td>'
+      +'<td><span style="'+pc+'">'+fmtDate(o.ultcambio)+'</span></td>'
       +'<td>'+o.frec+'</td>'
       +'<td>'+o.resp+'</td>'
       +'<td>'+(o.resppase||'—')+'</td>'
@@ -1050,12 +1095,30 @@ function showOrgHistorico(oi){
   var o=db.organoides[oi];
   var hist=(db.organoides_historico||[]).filter(function(h){return h.org_id===o.id;});
   var el=document.getElementById('org-historico-content');
-  if(!hist.length){el.innerHTML='<div class="empty-state">Sin entradas en el histórico todavía.</div>';return;}
-  var html='<div style="overflow-x:auto"><table style="table-layout:auto;width:100%"><thead><tr>'
-    +'<th>Fecha actualización</th><th>Realizado por</th><th>Diámetro</th><th>Últ. cambio medio</th><th>Estado</th><th>Notas</th>'
-    +'</tr></thead><tbody>';
-  hist.slice().reverse().forEach(function(h){
-    html+='<tr><td>'+h.fecha+'</td><td>'+h.quien+'</td><td>'+(h.diametro||'—')+'</td><td>'+(h.ultcambio||'—')+'</td><td>'+badge(h.estado)+'</td><td>'+(h.notas||'—')+'</td></tr>';
+  if(!hist.length){el.innerHTML='<div class="empty-state">Sin entradas en el histórico todavía.<br>Cada vez que guardes el organoide se registra una nueva entrada con todos los datos de ese momento.</div>';return;}
+  var fields=[
+    ['Fecha actualización','fecha'],['Realizado por','quien'],
+    ['ID','id'],['Tejido','tejido'],['Origen celular','origen'],
+    ['Criovial origen','criovial'],['Protocolo','proto'],
+    ['Fecha inicio','finicio'],['Fecha últ. actualiz.','fultact'],
+    ['Diámetro','diametro'],['Conc. siembra inicial','concsiem'],
+    ['Frec. cambio medio','frec'],
+    ['Último cambio medio','ultcambio'],['Próximo cambio','proxcambio'],
+    ['Responsable cultivo','resp'],['Resp. últ. cambio','resppase'],
+    ['Estado','estado'],['Notas','notas']
+  ];
+  var html='<div style="overflow-x:auto"><table style="table-layout:auto;width:100%;font-size:11px"><thead><tr>';
+  fields.forEach(function(f){html+='<th style="white-space:nowrap;padding:6px 8px">'+f[0]+'</th>';});
+  html+='</tr></thead><tbody>';
+  hist.slice().reverse().forEach(function(h,idx){
+    html+='<tr style="background:'+(idx%2===0?'var(--color-background-secondary)':'')+'">';
+    fields.forEach(function(f){
+      var val=h[f[1]]!==undefined&&h[f[1]]!==''?h[f[1]]:'—';
+      if(f[1]==='estado')val=badge(val);
+      else if(['finicio','fultact','ultcambio','proxcambio','fecha'].indexOf(f[1])>-1&&val!=='—')val=val.replace(/(\d{4})-(\d{2})-(\d{2})/,'$3/$2/$1');
+      html+='<td style="padding:5px 8px;white-space:nowrap">'+val+'</td>';
+    });
+    html+='</tr>';
   });
   html+='</tbody></table></div>';
   el.innerHTML=html;
@@ -1113,15 +1176,11 @@ function saveOrganoide() {
   };
   if (idx >= 0) db.organoides[idx] = o; else db.organoides.push(o);
   if(!db.organoides_historico)db.organoides_historico=[];
-  db.organoides_historico.push({
+  db.organoides_historico.push(Object.assign({},o,{
     org_id:o.id,
     fecha:o.fultact+' '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
-    quien:o.resppase||o.resp||'—',
-    diametro:o.diametro,
-    ultcambio:o.ultcambio,
-    estado:o.estado,
-    notas:o.notas
-  });
+    quien:o.resppase||o.resp||'—'
+  }));
   closeModal('org-modal'); saveDB(); renderAll();
 }
 
