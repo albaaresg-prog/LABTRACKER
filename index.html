@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabTracker v6</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#ffffff;--bg-secondary:#f5f5f5;--bg-tertiary:#ececec;
+  --text-primary:#111111;--text-secondary:#555555;--text-tertiary:#999999;
+  --border-tertiary:rgba(0,0,0,0.1);--border-secondary:rgba(0,0,0,0.2);--border-primary:rgba(0,0,0,0.3);
+  --bg-info:#e6f1fb;--bg-success:#eaf3de;--bg-warning:#faeeda;--bg-danger:#fcebeb;
+  --text-info:#185fa5;--text-success:#3b6d11;--text-warning:#854f0b;--text-danger:#a32d2d;
+  --radius-md:8px;--radius-lg:12px;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'Courier New',monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg-primary:#1a1a1a;--bg-secondary:#252525;--bg-tertiary:#2f2f2f;
+    --text-primary:#eeeeee;--text-secondary:#aaaaaa;--text-tertiary:#666666;
+    --border-tertiary:rgba(255,255,255,0.1);--border-secondary:rgba(255,255,255,0.2);--border-primary:rgba(255,255,255,0.3);
+    --bg-info:#0c2d4a;--bg-success:#162b0a;--bg-warning:#3a2200;--bg-danger:#3a0a0a;
+    --text-info:#7ab8f5;--text-success:#7ec85a;--text-warning:#f5c842;--text-danger:#f08080;
+  }
+}
+body{font-family:var(--font-sans);font-size:13px;background:var(--bg-primary);color:var(--text-primary)}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.header{padding:.7rem 1.25rem;border-bottom:.5px solid var(--border-tertiary);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--bg-primary);position:sticky;top:0;z-index:100}
+.save-ind{font-size:11px;color:var(--text-tertiary);margin-top:1px;min-height:13px}
+.save-ind.saving{color:var(--text-warning)}.save-ind.saved{color:var(--text-success)}
+.nav{display:flex;gap:2px;padding:.45rem .875rem;border-bottom:.5px solid var(--border-tertiary);overflow-x:auto;flex-shrink:0;background:var(--bg-primary);position:sticky;top:52px;z-index:99}
+.nav-btn{background:none;border:.5px solid transparent;border-radius:var(--radius-md);padding:5px 10px;font-size:11px;cursor:pointer;color:var(--text-secondary);white-space:nowrap;font-family:var(--font-sans)}
+.nav-btn.active{background:var(--bg-secondary);border-color:var(--border-secondary);color:var(--text-primary);font-weight:500}
+.nav-btn:hover:not(.active){background:var(--bg-secondary)}
+.content{padding:.875rem;flex:1}
+.sec{display:none}.sec.active{display:block}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:7px;margin-bottom:.875rem}
+.met{background:var(--bg-secondary);border-radius:var(--radius-md);padding:.6rem .8rem}
+.met-l{font-size:10px;color:var(--text-secondary);margin-bottom:2px}
+.met-v{font-size:17px;font-weight:500;color:var(--text-primary)}
+.tw{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:.875rem}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+thead{background:var(--bg-secondary)}
+th{padding:7px 9px;text-align:left;font-weight:500;color:var(--text-secondary);font-size:11px}
+td{padding:6px 9px;border-top:.5px solid var(--border-tertiary);color:var(--text-primary);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:hover td{background:var(--bg-secondary)}
+.badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:500;white-space:nowrap}
+.bg{background:var(--bg-success);color:var(--text-success)}
+.ba{background:var(--bg-warning);color:var(--text-warning)}
+.br{background:var(--bg-danger);color:var(--text-danger)}
+.bb{background:var(--bg-info);color:var(--text-info)}
+.bgr{background:var(--bg-secondary);color:var(--text-secondary)}
+.bp{background:#eeedfe;color:#534ab7}
+.bt{background:#e1f5ee;color:#0f6e56}
+.fr{display:flex;gap:7px;margin-bottom:.75rem;flex-wrap:wrap;align-items:center}
+.fr select,.fr input[type=text]{font-size:12px;padding:4px 8px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans)}
+.ab-btn{background:none;border:.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:5px 10px;font-size:12px;cursor:pointer;color:var(--text-primary);font-family:var(--font-sans)}
+.ab-btn:hover{background:var(--bg-secondary)}
+.act-btn{background:none;border:.5px solid var(--border-tertiary);border-radius:var(--radius-md);padding:2px 6px;font-size:11px;cursor:pointer;color:var(--text-secondary);font-family:var(--font-sans)}
+.act-btn:hover{background:var(--bg-secondary)}
+.del-btn{background:none;border:.5px solid var(--border-tertiary);border-radius:var(--radius-md);padding:2px 6px;font-size:11px;cursor:pointer;color:var(--text-danger);font-family:var(--font-sans)}
+.del-btn:hover{background:var(--bg-danger)}
+.restore-btn{background:none;border:.5px solid #97c459;border-radius:var(--radius-md);padding:2px 6px;font-size:11px;cursor:pointer;color:#27500a;font-family:var(--font-sans)}
+.restore-btn:hover{background:var(--bg-success)}
+.perm-del-btn{background:none;border:.5px solid #f09595;border-radius:var(--radius-md);padding:2px 6px;font-size:11px;cursor:pointer;color:#791f1f;font-family:var(--font-sans)}
+.perm-del-btn:hover{background:var(--bg-danger)}
+.sec-t{font-size:13px;font-weight:500;margin-bottom:.7rem;color:var(--text-primary)}
+.modal-bg{display:none;background:rgba(0,0,0,0.45);position:fixed;inset:0;z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg-primary);border:.5px solid var(--border-secondary);border-radius:var(--radius-lg);padding:1.125rem;width:100%;max-width:660px;margin:auto}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem}
+.modal-title{font-size:13px;font-weight:500;color:var(--text-primary)}
+.close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);line-height:1;font-family:var(--font-sans)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;color:var(--text-secondary);font-weight:500}
+.field input,.field select,.field textarea{font-size:12px;padding:5px 7px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);width:100%;font-family:var(--font-sans)}
+.field textarea{resize:vertical;min-height:52px}
+.form-sec{font-size:10px;font-weight:500;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 3px;grid-column:1/-1;border-top:.5px solid var(--border-tertiary);padding-top:8px}
+.form-sec.first{border-top:none;padding-top:0;margin-top:0}
+.save-btn{background:var(--bg-secondary);border:.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:6px 16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text-primary);margin-top:10px;font-family:var(--font-sans)}
+.save-btn:hover{background:var(--bg-tertiary)}
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--bg-primary);border:.5px solid var(--border-secondary);border-radius:var(--radius-lg);padding:1.5rem;max-width:400px;width:90%;text-align:center}
+.confirm-title{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:.5rem}
+.confirm-msg{font-size:12px;color:var(--text-secondary);margin-bottom:1rem;line-height:1.5}
+.confirm-item{font-size:12px;font-weight:500;color:var(--text-primary);background:var(--bg-secondary);border-radius:var(--radius-md);padding:6px 10px;margin-bottom:.875rem}
+.confirm-actions{display:flex;gap:8px;justify-content:center}
+.confirm-yes{background:var(--bg-danger);border:.5px solid #f09595;border-radius:var(--radius-md);padding:6px 18px;font-size:12px;font-weight:500;cursor:pointer;color:#791f1f;font-family:var(--font-sans)}
+.confirm-yes:hover{background:#f7c1c1}
+.confirm-no{background:none;border:.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:6px 18px;font-size:12px;cursor:pointer;color:var(--text-primary);font-family:var(--font-sans)}
+.confirm-no:hover{background:var(--bg-secondary)}
+.trash-notice{background:var(--bg-warning);border:.5px solid #fac775;border-radius:var(--radius-md);padding:.625rem .875rem;font-size:12px;color:var(--text-warning);margin-bottom:.875rem}
+.trash-mod-label{font-size:11px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;padding:.5rem 0 .25rem;border-top:.5px solid var(--border-tertiary);margin-top:.5rem}
+.trash-mod-label:first-child{border-top:none;margin-top:0}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text-tertiary);font-size:12px}
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+@media(max-width:600px){.io-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+.io-card{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:1rem;display:flex;flex-direction:column;gap:8px}
+.io-title{font-size:13px;font-weight:500;color:var(--text-primary)}
+.io-btn{background:var(--bg-secondary);border:.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text-primary);width:100%;text-align:center;font-family:var(--font-sans)}
+.io-btn:hover{background:var(--bg-tertiary)}
+.modules-check{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mod-check{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 5px;border-radius:var(--radius-md)}
+.mod-check:hover{background:var(--bg-secondary)}
+.mod-check input{accent-color:#1d9e75;width:12px;height:12px;cursor:pointer}
+.upload-zone{border:.5px dashed var(--border-secondary);border-radius:var(--radius-md);padding:1rem;text-align:center;cursor:pointer;background:var(--bg-secondary)}
+.upload-zone:hover{border-color:var(--border-primary)}
+.upload-zone p{font-size:12px;color:var(--text-secondary);margin-bottom:2px}
+.upload-zone span{font-size:10px;color:var(--text-tertiary)}
+.log-panel{background:var(--bg-secondary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-md);padding:.625rem;font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);max-height:130px;overflow-y:auto;line-height:1.7;display:none}
+.log-panel.vis{display:block}
+.log-ok{color:var(--text-success)}.log-warn{color:var(--text-warning)}.log-err{color:var(--text-danger)}.log-info{color:var(--text-info)}
+.fmt-row{display:flex;gap:5px}
+.fmt-btn{background:none;border:.5px solid var(--border-tertiary);border-radius:var(--radius-md);padding:4px 9px;font-size:11px;cursor:pointer;color:var(--text-secondary);font-family:var(--font-sans)}
+.fmt-btn.active{background:var(--bg-secondary);border-color:var(--border-secondary);color:var(--text-primary);font-weight:500}
+.prog-wrap{height:4px;background:var(--bg-secondary);border-radius:4px;margin:4px 0;display:none;overflow:hidden}
+.prog-wrap.vis{display:block}
+.prog-fill{height:100%;background:#1d9e75;border-radius:4px;transition:width .2s}
+.je-editor{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.875rem;margin-bottom:.875rem;display:none}
+.je-editor.open{display:block}
+.je-editor-title{width:100%;font-size:13px;font-weight:500;border:none;outline:none;color:var(--text-primary);background:transparent;margin-bottom:.4rem;font-family:var(--font-sans)}
+.je-editor-body{width:100%;min-height:130px;border:none;outline:none;font-size:12px;color:var(--text-primary);background:transparent;resize:none;line-height:1.6;font-family:var(--font-sans)}
+.je-footer{display:flex;gap:7px;align-items:center;margin-top:.625rem;flex-wrap:wrap;border-top:.5px solid var(--border-tertiary);padding-top:.625rem}
+.je-footer input,.je-footer select{font-size:11px;padding:4px 7px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans)}
+.je-save-btn{background:var(--bg-secondary);border:.5px solid var(--border-secondary);border-radius:var(--radius-md);padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text-primary);margin-left:auto;font-family:var(--font-sans)}
+.journal-entry{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.75rem .875rem;margin-bottom:7px;cursor:pointer}
+.journal-entry:hover{border-color:var(--border-secondary)}
+.je-title{font-size:12px;font-weight:500;color:var(--text-primary)}
+.je-meta{font-size:10px;color:var(--text-secondary);margin-top:1px}
+.je-body-preview{font-size:11px;color:var(--text-secondary);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-top:4px}
+.settings-section{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.875rem 1.125rem;margin-bottom:.875rem}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-top:.5px solid var(--border-tertiary)}
+.settings-row:first-child{border-top:none}
+.settings-label{font-size:12px;font-weight:500;color:var(--text-primary)}
+.settings-sub{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.toggle{width:34px;height:18px;border-radius:9px;background:var(--border-secondary);cursor:pointer;position:relative;flex-shrink:0;border:none}
+.toggle.on{background:#1d9e75}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle.on::after{transform:translateX(16px)}
+.almacen-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:.875rem}
+.alm-card{background:var(--bg-primary);border:.5px solid var(--border-tertiary);border-radius:var(--radius-lg);padding:.875rem}
+.prog-bar{height:3px;background:var(--bg-secondary);border-radius:3px;margin:6px 0}
+.prog-bar-fill{height:100%;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div>
+    <div style="font-size:14px;font-weight:500;color:var(--text-primary)">LabTracker v6</div>
+    <div class="save-ind" id="save-ind">Cargando...</div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <button class="ab-btn" onclick="showSec('io',this)" style="font-size:11px;padding:4px 9px">Importar / Exportar</button>
+    <button class="ab-btn" style="font-size:11px;padding:4px 9px;color:var(--text-danger);border-color:#f09595" onclick="showSec('papelera',this)">
+      Papelera <span id="trash-badge" style="display:none;background:#e24b4a;color:#fff;border-radius:20px;padding:0 5px;font-size:10px;margin-left:3px"></span>
+    </button>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showSec('dashboard',this)">Vista general</button>
+  <button class="nav-btn" onclick="showSec('cultivos',this)">Cultivos</button>
+  <button class="nav-btn" onclick="showSec('organoides',this)">Organoides</button>
+  <button class="nav-btn" onclick="showSec('experimentos',this)">Experimentos</button>
+  <button class="nav-btn" onclick="showSec('reactivos',this)">Reactivos</button>
+  <button class="nav-btn" onclick="showSec('almacen',this)">Almacén</button>
+  <button class="nav-btn" onclick="showSec('protocolos',this)">Protocolos</button>
+  <button class="nav-btn" onclick="showSec('fotos',this)">Fotos</button>
+  <button class="nav-btn" onclick="showSec('cuaderno',this)">Cuaderno</button>
+  <button class="nav-btn" onclick="showSec('io',this)">Importar/Exportar</button>
+  <button class="nav-btn" onclick="showSec('papelera',this)" style="color:var(--text-danger)">Papelera</button>
+  <button class="nav-btn" onclick="showSec('ajustes',this)">Ajustes</button>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="font-size:26px;margin-bottom:.5rem;color:var(--text-danger)">&#9888;</div>
+    <div class="confirm-title" id="confirm-title">¿Mover a la papelera?</div>
+    <div class="confirm-msg" id="confirm-msg">El registro se guardará en la papelera. Podrás recuperarlo cuando quieras.</div>
+    <div class="confirm-item" id="confirm-item"></div>
+    <div class="confirm-actions">
+      <button class="confirm-yes" id="confirm-yes-btn">Mover a papelera</button>
+      <button class="confirm-no" onclick="cancelConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERM DELETE CONFIRM -->
+<div class="confirm-overlay" id="perm-overlay">
+  <div class="confirm-box">
+    <div style="font-size:26px;margin-bottom:.5rem;color:var(--text-danger)">&#10005;</div>
+    <div class="confirm-title">¿Eliminar permanentemente?</div>
+    <div class="confirm-msg">Esta acción <strong>no se puede deshacer</strong>. El registro se borrará para siempre.</div>
+    <div class="confirm-item" id="perm-item"></div>
+    <div class="confirm-actions">
+      <button class="confirm-yes" id="perm-yes-btn" style="background:#f7c1c1;border-color:#e24b4a;color:#501313">Eliminar definitivamente</button>
+      <button class="confirm-no" onclick="cancelPerm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="sec active" id="s-dashboard">
+  <div class="metrics" id="dash-metrics"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+      <div style="font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:5px">Cultivos activos</div>
+      <div class="tw"><table><thead><tr><th style="width:18%">ID</th><th style="width:25%">Línea</th><th style="width:14%">Pase</th><th style="width:18%">Confluencia</th><th style="width:25%">Estado</th></tr></thead><tbody id="dash-cultivos"></tbody></table></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:5px">Alertas de stock</div>
+      <div class="tw"><table><thead><tr><th style="width:40%">Reactivo</th><th style="width:20%">Stock</th><th style="width:20%">Mín.</th><th style="width:20%">Estado</th></tr></thead><tbody id="dash-reactivos"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- CULTIVOS -->
+<div class="sec" id="s-cultivos">
+  <div class="fr">
+    <select id="cult-filter" onchange="renderCultivos()"><option value="">Todos los estados</option><option>Activo</option><option>Pase pendiente</option><option>Criopreservado</option><option>Descartado</option></select>
+    <button class="ab-btn" onclick="openCultModal(-1)">+ Nuevo cultivo</button>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th style="width:7%">ID</th><th style="width:10%">Línea</th><th style="width:6%">Pase</th><th style="width:12%">Medio</th><th style="width:7%">Frasco</th><th style="width:10%">Últ. cambio</th><th style="width:9%">Confl. entonces</th><th style="width:8%">Frec.</th><th style="width:8%">Confl. actual</th><th style="width:10%">Responsable</th><th style="width:7%">Estado</th><th style="width:6%"></th></tr></thead>
+    <tbody id="cult-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="cult-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="cult-modal-title">Cultivo celular</span><button class="close-btn" onclick="closeModal('cult-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Identificación</div>
+      <div class="field"><label>ID cultivo</label><input id="cf-id" type="text" placeholder="C-006"></div>
+      <div class="field"><label>Línea celular</label><input id="cf-linea" type="text"></div>
+      <div class="field"><label>Pase actual</label><input id="cf-pase" type="text" placeholder="P1"></div>
+      <div class="field"><label>Cultivo de origen</label><input id="cf-origen" type="text"></div>
+      <div class="field"><label>Medio de cultivo</label><input id="cf-medio" type="text"></div>
+      <div class="field"><label>Tipo de frasco</label><select id="cf-frasco"><option>T25</option><option>T75</option><option>T150</option><option>6-well</option><option>12-well</option><option>24-well</option><option>96-well</option><option>Biorreactor</option></select></div>
+      <div class="field"><label>Frec. cambio medio</label><select id="cf-frec"><option>Diario</option><option>Cada 2 días</option><option>Cada 3 días</option><option>Semanal</option></select></div>
+      <div class="field"><label>Fecha último cambio</label><input id="cf-fultcambio" type="date"></div>
+      <div class="field"><label>Confluencia en últ. cambio (%)</label><input id="cf-conflcambio" type="number" min="0" max="100"></div>
+      <div class="field"><label>Confluencia actual (%)</label><input id="cf-confl" type="number" min="0" max="100"></div>
+      <div class="field"><label>Responsable último pase</label><input id="cf-resp" type="text"></div>
+      <div class="field"><label>Estado</label><select id="cf-estado"><option>Activo</option><option>Pase pendiente</option><option>Criopreservado</option><option>Descartado</option><option>Contaminado</option></select></div>
+      <div class="field full"><label>Notas</label><textarea id="cf-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="cf-idx" value="-1">
+    <button class="save-btn" onclick="saveCultivo()">Guardar cultivo</button>
+  </div>
+</div>
+
+<!-- ORGANOIDES -->
+<div class="sec" id="s-organoides">
+  <div class="fr">
+    <select id="org-filter" onchange="renderOrganoides()"><option value="">Todos los tejidos</option><option>Intestinal</option><option>Cerebral</option><option>Hepático</option><option>Renal</option></select>
+    <button class="ab-btn" onclick="openOrgModal(-1)">+ Nuevo organoide</button>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th style="width:7%">ID</th><th style="width:10%">Tejido</th><th style="width:10%">Origen</th><th style="width:6%">Día</th><th style="width:9%">Diámetro</th><th style="width:10%">Últ. cambio</th><th style="width:9%">Frec.</th><th style="width:10%">Próx. cambio</th><th style="width:10%">Responsable</th><th style="width:9%">Estado</th><th style="width:5%"></th></tr></thead>
+    <tbody id="org-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="org-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="org-modal-title">Organoide</span><button class="close-btn" onclick="closeModal('org-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Identificación</div>
+      <div class="field"><label>ID</label><input id="of-id" type="text"></div>
+      <div class="field"><label>Tejido</label><select id="of-tejido"><option>Intestinal</option><option>Cerebral</option><option>Hepático</option><option>Renal</option><option>Pulmonar</option><option>Pancreático</option><option>Otro</option></select></div>
+      <div class="field"><label>Origen celular</label><input id="of-origen" type="text"></div>
+      <div class="field"><label>Protocolo</label><input id="of-proto" type="text"></div>
+      <div class="field"><label>Día de cultivo</label><input id="of-dia" type="number"></div>
+      <div class="field"><label>Diámetro estimado</label><input id="of-diametro" type="text"></div>
+      <div class="field"><label>Frec. cambio medio</label><select id="of-frec"><option>Diario</option><option>Cada 2 días</option><option>Cada 3 días</option><option>Semanal</option></select></div>
+      <div class="field"><label>Último cambio medio</label><input id="of-ultcambio" type="date"></div>
+      <div class="field"><label>Próximo cambio</label><input id="of-proxcambio" type="date"></div>
+      <div class="field"><label>Responsable</label><input id="of-resp" type="text"></div>
+      <div class="field"><label>Estado</label><select id="of-estado"><option>Activo</option><option>Diferenciando</option><option>Criopreservado</option><option>Descartado</option></select></div>
+      <div class="field full"><label>Notas</label><textarea id="of-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="of-idx" value="-1">
+    <button class="save-btn" onclick="saveOrganoide()">Guardar organoide</button>
+  </div>
+</div>
+
+<!-- EXPERIMENTOS -->
+<div class="sec" id="s-experimentos">
+  <div class="fr">
+    <select id="exp-filter" onchange="renderExperimentos()"><option value="">Todos</option><option>Planificado</option><option>En curso</option><option>Completado</option></select>
+    <button class="ab-btn" onclick="openExpModal(-1)">+ Nuevo experimento</button>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th style="width:8%">ID</th><th style="width:20%">Nombre</th><th style="width:12%">Modelo</th><th style="width:10%">Inicio</th><th style="width:10%">Fin</th><th style="width:11%">Responsable</th><th style="width:9%">Técnicas</th><th style="width:8%">Estado</th><th style="width:7%"></th></tr></thead>
+    <tbody id="exp-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="exp-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="exp-modal-title">Experimento</span><button class="close-btn" onclick="closeModal('exp-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">General</div>
+      <div class="field"><label>ID</label><input id="ef-id" type="text"></div>
+      <div class="field"><label>Nombre</label><input id="ef-nombre" type="text"></div>
+      <div class="field full"><label>Objetivo / hipótesis</label><textarea id="ef-obj" rows="2"></textarea></div>
+      <div class="field"><label>Modelo celular</label><input id="ef-modelo" type="text"></div>
+      <div class="field"><label>Responsable</label><input id="ef-resp" type="text"></div>
+      <div class="field"><label>Fecha inicio</label><input id="ef-inicio" type="date"></div>
+      <div class="field"><label>Fecha fin prevista</label><input id="ef-fin" type="date"></div>
+      <div class="field"><label>Técnicas empleadas</label><input id="ef-tecnicas" type="text"></div>
+      <div class="field"><label>Estado</label><select id="ef-estado"><option>Planificado</option><option>En curso</option><option>Completado</option><option>Pausado</option><option>Cancelado</option></select></div>
+      <div class="field full"><label>Notas / resultados</label><textarea id="ef-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="ef-idx" value="-1">
+    <button class="save-btn" onclick="saveExperimento()">Guardar experimento</button>
+  </div>
+</div>
+
+<!-- REACTIVOS -->
+<div class="sec" id="s-reactivos">
+  <div class="metrics">
+    <div class="met"><div class="met-l">Total registrados</div><div class="met-v" id="react-total">0</div></div>
+    <div class="met"><div class="met-l">Sin stock / bajo</div><div class="met-v" id="react-bajo" style="color:var(--text-danger)">0</div></div>
+    <div class="met"><div class="met-l">Caducan en 30 días</div><div class="met-v" id="react-cad" style="color:var(--text-warning)">0</div></div>
+  </div>
+  <div class="fr">
+    <select id="react-filter" onchange="renderReactivos()"><option value="">Todos</option><option>OK</option><option>Stock bajo</option><option>Sin stock</option></select>
+    <button class="ab-btn" onclick="openReactModal(-1)">+ Añadir reactivo</button>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th style="width:16%">Reactivo</th><th style="width:10%">Cat. nº</th><th style="width:10%">Proveedor</th><th style="width:8%">Stock</th><th style="width:7%">Mín.</th><th style="width:7%">Unidad</th><th style="width:10%">Caducidad</th><th style="width:10%">Ubicación</th><th style="width:9%">Estado</th><th style="width:6%"></th></tr></thead>
+    <tbody id="react-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="react-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="react-modal-title">Reactivo</span><button class="close-btn" onclick="closeModal('react-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Identificación</div>
+      <div class="field"><label>Nombre</label><input id="rf-nombre" type="text"></div>
+      <div class="field"><label>Nº catálogo</label><input id="rf-cat" type="text"></div>
+      <div class="field"><label>Proveedor</label><input id="rf-prov" type="text"></div>
+      <div class="field"><label>Lote</label><input id="rf-lote" type="text"></div>
+      <div class="field"><label>Stock actual</label><input id="rf-stock" type="number" min="0"></div>
+      <div class="field"><label>Stock mínimo alerta</label><input id="rf-min" type="number" min="0"></div>
+      <div class="field"><label>Unidad</label><select id="rf-unidad"><option>mL</option><option>L</option><option>µL</option><option>mg</option><option>g</option><option>unidad</option><option>kit</option></select></div>
+      <div class="field"><label>Ubicación</label><select id="rf-ubic"><option>Temperatura ambiente</option><option>4°C (Frigo-1)</option><option>4°C (Frigo-2)</option><option>-20°C</option><option>-80°C</option><option>N₂ líquido</option></select></div>
+      <div class="field"><label>Fecha caducidad</label><input id="rf-cad" type="date"></div>
+      <div class="field"><label>Categoría</label><select id="rf-cat2"><option>Medio</option><option>Suplemento</option><option>Enzima</option><option>Anticuerpo</option><option>Kit</option><option>Inhibidor</option><option>Matriz</option><option>Otro</option></select></div>
+      <div class="field full"><label>Notas</label><textarea id="rf-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="rf-idx" value="-1">
+    <button class="save-btn" onclick="saveReactivo()">Guardar reactivo</button>
+  </div>
+</div>
+
+<!-- ALMACÉN -->
+<div class="sec" id="s-almacen">
+  <div class="almacen-grid" id="almacen-cards"></div>
+  <div class="fr"><button class="ab-btn" onclick="openVialModal(-1)">+ Registrar viales</button></div>
+  <div class="tw"><table>
+    <thead><tr><th style="width:12%">ID</th><th style="width:10%">Tipo</th><th style="width:13%">Línea</th><th style="width:9%">Pase</th><th style="width:11%">Almacén</th><th style="width:13%">Posición</th><th style="width:7%">Viales</th><th style="width:10%">Crioprotector</th><th style="width:9%">Fecha</th><th style="width:5%"></th></tr></thead>
+    <tbody id="vial-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="vial-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">Viales criopreservados</span><button class="close-btn" onclick="closeModal('vial-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Muestra</div>
+      <div class="field"><label>ID muestra</label><input id="vf-id" type="text" placeholder="CRY-2026-XXX"></div>
+      <div class="field"><label>Tipo</label><select id="vf-tipo"><option>Cultivo celular</option><option>Organoide</option><option>Tejido primario</option><option>Reactivo</option></select></div>
+      <div class="field"><label>Línea / modelo</label><input id="vf-linea" type="text"></div>
+      <div class="field"><label>Pase / día</label><input id="vf-pase" type="text"></div>
+      <div class="field"><label>Nº viales</label><input id="vf-nviales" type="number" min="1"></div>
+      <div class="field"><label>Crioprotector</label><input id="vf-crio" type="text" placeholder="10% DMSO"></div>
+      <div class="field"><label>Almacén</label><select id="vf-almacen"><option>Tank-A (N₂)</option><option>Tank-B (N₂)</option><option>ULT-1 (-80°C)</option><option>-20°C</option></select></div>
+      <div class="field"><label>Posición exacta</label><input id="vf-pos" type="text" placeholder="Box-2/Gob-C/Pos-3"></div>
+      <div class="field"><label>Fecha</label><input id="vf-fecha" type="date"></div>
+      <div class="field"><label>Realizado por</label><input id="vf-resp" type="text"></div>
+      <div class="field full"><label>Notas</label><textarea id="vf-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="vf-idx" value="-1">
+    <button class="save-btn" onclick="saveVial()">Guardar viales</button>
+  </div>
+</div>
+
+<!-- PROTOCOLOS -->
+<div class="sec" id="s-protocolos">
+  <div class="fr">
+    <select id="proto-filter" onchange="renderProtocolos()"><option value="">Todos</option><option>SOP</option><option>Protocolo</option><option>Paper</option><option>Guía</option></select>
+    <input type="text" id="proto-search" placeholder="Buscar título, autor..." oninput="renderProtocolos()" style="flex:1;min-width:100px">
+    <button class="ab-btn" onclick="openProtoModal(-1)">+ Añadir</button>
+  </div>
+  <div class="tw"><table style="table-layout:auto">
+    <thead><tr><th>Tipo</th><th>ID</th><th>Título</th><th>Autor</th><th>Versión</th><th>Categoría</th><th>Estado</th><th></th></tr></thead>
+    <tbody id="proto-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="proto-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="proto-modal-title">Documento</span><button class="close-btn" onclick="closeModal('proto-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Información</div>
+      <div class="field"><label>Tipo</label><select id="pf-tipo"><option>SOP</option><option>Protocolo</option><option>Paper</option><option>Guía</option><option>Otro</option></select></div>
+      <div class="field"><label>ID / Código</label><input id="pf-id" type="text"></div>
+      <div class="field full"><label>Título completo</label><input id="pf-titulo" type="text"></div>
+      <div class="field"><label>Autor(es)</label><input id="pf-autor" type="text"></div>
+      <div class="field"><label>Versión / Año</label><input id="pf-version" type="text"></div>
+      <div class="field"><label>Categoría</label><select id="pf-cat"><option>Cultivo celular</option><option>Organoide</option><option>Imagen / microscopía</option><option>Biología molecular</option><option>Seguridad</option><option>Otro</option></select></div>
+      <div class="field full"><label>DOI / URL</label><input id="pf-doi" type="text"></div>
+      <div class="field full"><label>Palabras clave / etiquetas</label><input id="pf-tags" type="text"></div>
+      <div class="field"><label>Estado</label><select id="pf-estado"><option>Vigente</option><option>Pendiente de revisión</option><option>Obsoleto</option><option>Borrador</option></select></div>
+      <div class="field full"><label>Notas / resumen de uso</label><textarea id="pf-notas" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="pf-idx" value="-1">
+    <button class="save-btn" onclick="saveProtocolo()">Guardar documento</button>
+  </div>
+</div>
+
+<!-- FOTOS -->
+<div class="sec" id="s-fotos">
+  <div class="fr">
+    <select id="foto-filter" onchange="renderFotos()"><option value="">Todos los tipos</option><option>Microscopía óptica</option><option>Microscopía fluorescente</option><option>Microscopía confocal</option><option>Gel / electrofóresis</option><option>Placa / pocillo</option><option>Resultado</option></select>
+    <input type="text" id="foto-search" placeholder="Buscar ID, muestra..." oninput="renderFotos()" style="flex:1;min-width:100px">
+    <button class="ab-btn" onclick="openFotoModal(-1)">+ Registrar foto</button>
+  </div>
+  <div class="tw"><table style="table-layout:auto">
+    <thead><tr><th>ID foto</th><th>Tipo</th><th>Muestra</th><th>Equipo</th><th>Objetivo</th><th>Canales</th><th>Fecha</th><th>Por</th><th>Descripción</th><th></th></tr></thead>
+    <tbody id="foto-tbody"></tbody>
+  </table></div>
+</div>
+<div class="modal-bg" id="foto-modal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="foto-modal-title">Fotografía</span><button class="close-btn" onclick="closeModal('foto-modal')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-sec first">Identificación</div>
+      <div class="field"><label>ID fotografía</label><input id="ff-id" type="text" placeholder="FOT-2026-XXX"></div>
+      <div class="field"><label>Tipo de imagen</label><select id="ff-tipo"><option>Microscopía óptica</option><option>Microscopía fluorescente</option><option>Microscopía confocal</option><option>Gel / electrofóresis</option><option>Placa / pocillo</option><option>Resultado / gráfica</option><option>Otro</option></select></div>
+      <div class="field"><label>Muestra fotografiada</label><input id="ff-muestra" type="text"></div>
+      <div class="field"><label>Experimento asociado</label><input id="ff-exp" type="text"></div>
+      <div class="field"><label>Equipo / microscopio</label><input id="ff-equipo" type="text"></div>
+      <div class="field"><label>Objetivo / magnificación</label><input id="ff-obj" type="text"></div>
+      <div class="field"><label>Canales / fluorocromos</label><input id="ff-canales" type="text"></div>
+      <div class="field"><label>Fecha de captura</label><input id="ff-fecha" type="date"></div>
+      <div class="field"><label>Tomada por</label><input id="ff-resp" type="text"></div>
+      <div class="field"><label>Ruta / enlace al archivo</label><input id="ff-ruta" type="text"></div>
+      <div class="field full"><label>Descripción / observaciones</label><textarea id="ff-desc" rows="2"></textarea></div>
+    </div>
+    <input type="hidden" id="ff-idx" value="-1">
+    <button class="save-btn" onclick="saveFoto()">Guardar fotografía</button>
+  </div>
+</div>
+
+<!-- CUADERNO -->
+<div class="sec" id="s-cuaderno">
+  <div class="fr">
+    <select id="journal-filter" onchange="renderJournal()"><option value="">Todas</option><option>Observación</option><option>Resultado</option><option>Incidencia</option><option>Idea</option><option>Reunión</option></select>
+    <input type="text" id="journal-search" placeholder="Buscar en notas..." oninput="renderJournal()" style="flex:1;min-width:100px">
+    <button class="ab-btn" onclick="openJournalEditor(-1)">+ Nueva entrada</button>
+  </div>
+  <div class="je-editor" id="je-editor">
+    <input class="je-editor-title" id="je-titulo" placeholder="Título de la entrada..." type="text">
+    <textarea class="je-editor-body" id="je-body" placeholder="Escribe tus observaciones, resultados, ideas...&#10;&#10;Puedes referenciar cultivos (C-001), organoides (O-02), experimentos (E-031) o reactivos."></textarea>
+    <div class="je-footer">
+      <select id="je-cat" style="font-size:11px;padding:4px 7px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary)"><option>Observación</option><option>Resultado</option><option>Incidencia</option><option>Idea</option><option>Reunión</option><option>Otro</option></select>
+      <input type="text" id="je-tags" placeholder="Etiquetas: C-001, E-031..." style="flex:1;min-width:80px;font-size:11px;padding:4px 7px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary)">
+      <input type="text" id="je-autor" placeholder="Autor" style="width:110px;font-size:11px;padding:4px 7px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary)">
+      <input type="hidden" id="je-idx" value="-1">
+      <button class="je-save-btn" onclick="saveJournalEntry()">Guardar entrada</button>
+      <button class="ab-btn" onclick="closeJournalEditor()" style="font-size:11px">Cancelar</button>
+    </div>
+  </div>
+  <div id="journal-list"></div>
+</div>
+
+<!-- IMPORTAR / EXPORTAR -->
+<div class="sec" id="s-io">
+  <div class="io-grid">
+    <div class="io-card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:var(--radius-md);background:var(--bg-success);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-success)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="io-title">Exportar a LibreOffice / Excel</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary)">Genera un archivo .xlsx con todos tus datos, compatible con LibreOffice Calc y Microsoft Excel.</div>
+      <div style="font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:3px">Módulos a exportar:</div>
+      <div class="modules-check" id="export-modules">
+        <label class="mod-check"><input type="checkbox" value="cultivos" checked> Cultivos</label>
+        <label class="mod-check"><input type="checkbox" value="organoides" checked> Organoides</label>
+        <label class="mod-check"><input type="checkbox" value="experimentos" checked> Experimentos</label>
+        <label class="mod-check"><input type="checkbox" value="reactivos" checked> Reactivos</label>
+        <label class="mod-check"><input type="checkbox" value="viales" checked> Almacén</label>
+        <label class="mod-check"><input type="checkbox" value="protocolos" checked> Protocolos</label>
+        <label class="mod-check"><input type="checkbox" value="fotos" checked> Fotos</label>
+        <label class="mod-check"><input type="checkbox" value="journal" checked> Cuaderno</label>
+      </div>
+      <div class="fmt-row">
+        <button class="fmt-btn active" id="fmt-xlsx" onclick="setFmt('xlsx',this)">.xlsx</button>
+        <button class="fmt-btn" id="fmt-csv" onclick="setFmt('csv',this)">.csv</button>
+      </div>
+      <div class="prog-wrap" id="ep-wrap"><div class="prog-fill" id="ep-fill" style="width:0%"></div></div>
+      <button class="io-btn" onclick="runExport()">Exportar archivo</button>
+      <div class="log-panel" id="export-log"></div>
+    </div>
+    <div class="io-card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:var(--radius-md);background:var(--bg-info);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-info)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="io-title">Importar desde LibreOffice / Excel</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary)">Carga datos desde un .xlsx exportado anteriormente o creado manualmente.</div>
+      <div class="fmt-row" style="margin-bottom:6px">
+        <button class="fmt-btn active" id="imp-merge" onclick="setImportMode('merge',this)">Fusionar</button>
+        <button class="fmt-btn" id="imp-replace" onclick="setImportMode('replace',this)">Reemplazar</button>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('xlsx-input').click()">
+        <p>Haz clic para seleccionar archivo</p>
+        <span>.xlsx, .xls, .csv — máx. 50 MB</span>
+        <input type="file" id="xlsx-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(this)">
+      </div>
+      <div class="prog-wrap" id="ip-wrap"><div class="prog-fill" id="ip-fill" style="width:0%"></div></div>
+      <div class="log-panel" id="import-log"></div>
+      <div id="import-actions" style="display:none;gap:7px;margin-top:6px;flex-wrap:wrap">
+        <button class="save-btn" style="margin-top:0;background:var(--bg-success);border-color:#97c459;color:#27500a" onclick="confirmImport()">Confirmar importación</button>
+        <button class="ab-btn" onclick="cancelImport()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:6px;margin-top:.5rem">Backup JSON</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="ab-btn" onclick="exportJSON()">Exportar JSON (backup)</button>
+    <button class="ab-btn" onclick="document.getElementById('json-input').click()">Importar JSON</button>
+    <input type="file" id="json-input" accept=".json" style="display:none" onchange="handleJSONImport(this)">
+  </div>
+</div>
+
+<!-- PAPELERA -->
+<div class="sec" id="s-papelera">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;flex-wrap:wrap;gap:8px">
+    <div class="sec-t" style="margin:0">Papelera</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="ab-btn" onclick="restoreAll()">Restaurar todo</button>
+      <button class="ab-btn" style="color:var(--text-danger);border-color:#f09595" onclick="emptyTrash()">Vaciar papelera</button>
+    </div>
+  </div>
+  <div class="trash-notice">Los registros en la papelera se conservan indefinidamente. Puedes restaurarlos o eliminarlos definitivamente.</div>
+  <div id="trash-content"></div>
+</div>
+
+<!-- AJUSTES -->
+<div class="sec" id="s-ajustes">
+  <div class="sec-t">Ajustes</div>
+  <div class="settings-section">
+    <div class="settings-row" style="border:none">
+      <div><div class="settings-label">Nombre del laboratorio</div></div>
+      <input type="text" id="set-labname" placeholder="Mi Laboratorio" style="font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);width:180px" oninput="saveSetting('labname',this.value)">
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Investigador principal (PI)</div><div class="settings-sub">Se sugiere en formularios nuevos</div></div>
+      <input type="text" id="set-pi" placeholder="Nombre PI" style="font-size:12px;padding:5px 8px;border-radius:var(--radius-md);border:.5px solid var(--border-secondary);background:var(--bg-primary);color:var(--text-primary);width:180px" oninput="saveSetting('pi',this.value)">
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Alertas de stock bajo</div><div class="settings-sub">Notificación cuando reactivo baja del mínimo</div></div>
+      <button class="toggle on" id="tog-stock" onclick="toggleSetting('stock',this)"></button>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Alertas de cambio de medio</div><div class="settings-sub">Avisa cuando toca cambio en cultivos y organoides</div></div>
+      <button class="toggle on" id="tog-medio" onclick="toggleSetting('medio',this)"></button>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-label">Confirmación antes de eliminar</div><div class="settings-sub">Muestra diálogo de confirmación al borrar</div></div>
+      <button class="toggle on" id="tog-confirm" onclick="toggleSetting('confirm',this)"></button>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-row" style="border:none">
+      <div><div class="settings-label">Datos guardados</div><div class="settings-sub" id="storage-info">—</div></div>
+      <button class="ab-btn" style="color:var(--text-danger);border-color:#f09595" onclick="confirmResetAll()">Limpiar todo</button>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text-tertiary);margin-top:.5rem;line-height:1.6">
+    LabTracker v6 — Para conectar con Supabase y compartir datos entre varios usuarios, sigue la guía de despliegue.
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURACIÓN — rellena estos valores tras seguir la guía de despliegue
+// ══════════════════════════════════════════════
+var USE_SUPABASE = false; // Cambia a true cuando tengas las credenciales
+var SB_URL = 'https://TU_URL.supabase.co';
+var SB_KEY = 'TU_ANON_KEY';
+var LAB_ID = 'lab_principal';
+var sb = null;
+if (USE_SUPABASE && window.supabase) {
+  sb = window.supabase.createClient(SB_URL, SB_KEY);
+}
+
+var DB_KEY = 'labtracker_v6';
+var exportFmt = 'xlsx';
+var importMode = 'merge';
+var pendingImportData = null;
+var confirmCb = null;
+var permCb = null;
+
+var db = {
+  cultivos: [], organoides: [], experimentos: [], reactivos: [],
+  viales: [], protocolos: [], fotos: [], journal: [], trash: [],
+  settings: { labname: '', pi: '', toggles: { stock: true, medio: true, confirm: true } }
+};
+
+// ── Storage (local o Supabase) ──────────────────
+async function loadDB() {
+  if (USE_SUPABASE && sb) {
+    try {
+      var res = await sb.from('labtracker_data').select('data_key, data_value').eq('lab_id', LAB_ID);
+      if (res.data) res.data.forEach(function(r) { if (db[r.data_key] !== undefined) db[r.data_key] = r.data_value; });
+    } catch(e) { console.warn('Supabase load error:', e); fallbackLoad(); }
+  } else {
+    fallbackLoad();
+  }
+  applySettings(); renderAll(); setSaveInd('saved', 'Datos cargados');
+}
+
+function fallbackLoad() {
+  try { var s = localStorage.getItem(DB_KEY); if (s) Object.assign(db, JSON.parse(s)); } catch(e) {}
+}
+
+async function saveDB() {
+  setSaveInd('saving', 'Guardando...');
+  if (USE_SUPABASE && sb) {
+    try {
+      var keys = ['cultivos','organoides','experimentos','reactivos','viales','protocolos','fotos','journal','trash','settings'];
+      var upserts = keys.map(function(k) { return { lab_id: LAB_ID, data_key: k, data_value: db[k] || [], updated_at: new Date().toISOString() }; });
+      await sb.from('labtracker_data').upsert(upserts, { onConflict: 'lab_id,data_key' });
+      setSaveInd('saved', 'Guardado en la nube');
+    } catch(e) { setSaveInd('', 'Error al guardar'); }
+  } else {
+    try { localStorage.setItem(DB_KEY, JSON.stringify(db)); setSaveInd('saved', 'Guardado localmente'); } catch(e) { setSaveInd('', 'Error al guardar'); }
+  }
+}
+
+function setSaveInd(cls, msg) {
+  var el = document.getElementById('save-ind');
+  el.className = 'save-ind' + (cls ? ' ' + cls : '');
+  el.textContent = msg;
+  if (cls === 'saved') setTimeout(function() { el.textContent = ''; el.className = 'save-ind'; }, 2500);
+}
+
+function applySettings() {
+  var s = db.settings || {};
+  if (s.labname) document.getElementById('set-labname').value = s.labname;
+  if (s.pi) document.getElementById('set-pi').value = s.pi;
+  var t = s.toggles || {};
+  ['stock','medio','confirm'].forEach(function(k) { var tog = document.getElementById('tog-' + k); if (tog) { if (t[k] === false) tog.classList.remove('on'); else tog.classList.add('on'); } });
+  if (s.labname) document.title = s.labname + ' — LabTracker';
+}
+
+function saveSetting(k, v) { if (!db.settings) db.settings = {}; db.settings[k] = v; saveDB(); }
+function toggleSetting(k, btn) { btn.classList.toggle('on'); if (!db.settings) db.settings = {}; if (!db.settings.toggles) db.settings.toggles = {}; db.settings.toggles[k] = btn.classList.contains('on'); saveDB(); }
+
+// ── Navigation ──────────────────────────────────
+function showSec(id, btn) {
+  document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('s-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'papelera') renderTrash();
+  if (id === 'ajustes') { try { document.getElementById('storage-info').textContent = Math.round(JSON.stringify(db).length / 102.4) / 10 + ' KB guardados'; } catch(e) {} }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+
+// ── Confirm dialogs ─────────────────────────────
+function askConfirm(title, msg, item, yesTxt, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-item').textContent = item;
+  document.getElementById('confirm-yes-btn').textContent = yesTxt || 'Mover a papelera';
+  confirmCb = cb;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+document.getElementById('confirm-yes-btn').onclick = function() { document.getElementById('confirm-overlay').classList.remove('open'); if (confirmCb) confirmCb(); confirmCb = null; };
+function cancelConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); confirmCb = null; }
+
+function askPerm(item, cb) {
+  document.getElementById('perm-item').textContent = item;
+  permCb = cb;
+  document.getElementById('perm-overlay').classList.add('open');
+}
+document.getElementById('perm-yes-btn').onclick = function() { document.getElementById('perm-overlay').classList.remove('open'); if (permCb) permCb(); permCb = null; };
+function cancelPerm() { document.getElementById('perm-overlay').classList.remove('open'); permCb = null; }
+
+function shouldConfirm() { var t = db.settings && db.settings.toggles; return !t || t.confirm !== false; }
+
+// ── Trash ───────────────────────────────────────
+function moveToTrash(mod, idx) {
+  if (!db.trash) db.trash = [];
+  var item = JSON.parse(JSON.stringify(db[mod][idx]));
+  item._trashMod = mod;
+  item._trashDate = new Date().toLocaleString('es-ES');
+  db.trash.push(item);
+  db[mod].splice(idx, 1);
+  saveDB(); renderAll(); updateTrashBadge();
+}
+
+function doDelete(mod, idx) {
+  var item = db[mod][idx];
+  var label = item.id || item.nombre || item.titulo || item.linea || 'Registro';
+  if (shouldConfirm()) {
+    askConfirm('¿Mover a la papelera?', 'El registro se guardará en la papelera. Podrás recuperarlo cuando quieras.', label + ' — ' + mod, 'Mover a papelera', function() { moveToTrash(mod, idx); });
+  } else {
+    moveToTrash(mod, idx);
+  }
+}
+
+function restoreItem(i) {
+  var item = db.trash[i];
+  var mod = item._trashMod;
+  var clean = JSON.parse(JSON.stringify(item));
+  delete clean._trashMod; delete clean._trashDate;
+  if (!db[mod]) db[mod] = [];
+  db[mod].push(clean);
+  db.trash.splice(i, 1);
+  saveDB(); renderAll(); renderTrash(); updateTrashBadge();
+}
+
+function permDeleteItem(i) {
+  var item = db.trash[i];
+  var label = item.id || item.nombre || item.titulo || item.linea || 'Registro';
+  askPerm(label, function() { db.trash.splice(i, 1); saveDB(); renderTrash(); updateTrashBadge(); });
+}
+
+function restoreAll() {
+  if (!db.trash || !db.trash.length) return;
+  db.trash.forEach(function(item) {
+    var mod = item._trashMod;
+    var clean = JSON.parse(JSON.stringify(item));
+    delete clean._trashMod; delete clean._trashDate;
+    if (!db[mod]) db[mod] = [];
+    db[mod].push(clean);
+  });
+  db.trash = [];
+  saveDB(); renderAll(); renderTrash(); updateTrashBadge();
+}
+
+function emptyTrash() {
+  if (!db.trash || !db.trash.length) return;
+  askPerm('Todos los ' + db.trash.length + ' registros de la papelera', function() { db.trash = []; saveDB(); renderTrash(); updateTrashBadge(); });
+}
+
+function updateTrashBadge() {
+  var n = (db.trash || []).length;
+  var b = document.getElementById('trash-badge');
+  if (b) { b.style.display = n > 0 ? 'inline' : 'none'; b.textContent = n; }
+}
+
+function renderTrash() {
+  var el = document.getElementById('trash-content');
+  if (!el) return;
+  if (!db.trash || !db.trash.length) { el.innerHTML = '<div class="empty-state">La papelera está vacía</div>'; return; }
+  var byMod = {};
+  db.trash.forEach(function(item, i) { var m = item._trashMod || 'otro'; if (!byMod[m]) byMod[m] = []; byMod[m].push({ item: item, idx: i }); });
+  var modNames = { cultivos: 'Cultivos', organoides: 'Organoides', experimentos: 'Experimentos', reactivos: 'Reactivos', viales: 'Almacén', protocolos: 'Protocolos', fotos: 'Fotografías', journal: 'Cuaderno' };
+  var html = '';
+  Object.keys(byMod).forEach(function(mod) {
+    html += '<div class="trash-mod-label">' + (modNames[mod] || mod) + ' (' + byMod[mod].length + ')</div>';
+    html += '<div class="tw"><table style="table-layout:auto"><thead><tr><th>Elemento</th><th>Fecha eliminación</th><th>Detalle</th><th style="width:130px"></th></tr></thead><tbody>';
+    byMod[mod].forEach(function(entry) {
+      var item = entry.item; var i = entry.idx;
+      var label = item.id || item.nombre || item.titulo || item.linea || '—';
+      var detail = item.linea || item.tejido || item.modelo || item.prov || item.autor || item.muestra || '';
+      html += '<tr><td><strong>' + label + '</strong></td><td style="color:var(--text-secondary)">' + item._trashDate + '</td><td style="color:var(--text-secondary)">' + detail + '</td>';
+      html += '<td><div style="display:flex;gap:5px"><button class="restore-btn" onclick="restoreItem(' + i + ')">Restaurar</button><button class="perm-del-btn" onclick="permDeleteItem(' + i + ')">Eliminar</button></div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── Helpers ─────────────────────────────────────
+var badgeMap = { Activo: 'bg', 'Pase pendiente': 'ba', Criopreservado: 'bb', Descartado: 'bgr', Contaminado: 'br', Diferenciando: 'bp', 'En curso': 'bg', Planificado: 'ba', Completado: 'bgr', Pausado: 'bgr', Cancelado: 'br', Vigente: 'bg', 'Pendiente de revisión': 'ba', Obsoleto: 'br', Borrador: 'bgr' };
+function badge(t) { return '<span class="badge ' + (badgeMap[t] || 'bgr') + '">' + t + '</span>'; }
+function reactEstado(r) { if (r.stock <= 0) return 'Sin stock'; if (r.min && r.stock <= r.min) return 'Stock bajo'; return 'OK'; }
+function emptyRow(n, msg) { return '<tr><td colspan="' + n + '" class="empty-state" style="padding:1.5rem">' + (msg || 'Sin registros') + '</td></tr>'; }
+
+// ── Render all ──────────────────────────────────
+function renderAll() { renderDashboard(); renderCultivos(); renderOrganoides(); renderExperimentos(); renderReactivos(); renderViales(); renderProtocolos(); renderFotos(); renderJournal(); updateTrashBadge(); }
+
+// ── Dashboard ───────────────────────────────────
+function renderDashboard() {
+  var m = document.getElementById('dash-metrics'); if (!m) return;
+  var ca = (db.cultivos||[]).filter(function(c){return c.estado!=='Criopreservado'&&c.estado!=='Descartado';}).length;
+  var oa = (db.organoides||[]).filter(function(o){return o.estado!=='Criopreservado'&&o.estado!=='Descartado';}).length;
+  var ea = (db.experimentos||[]).filter(function(e){return e.estado==='En curso';}).length;
+  var rb = (db.reactivos||[]).filter(function(r){return r.stock<=0||r.stock<=r.min;}).length;
+  m.innerHTML = '<div class="met"><div class="met-l">Cultivos activos</div><div class="met-v">' + ca + '</div></div>'
+    + '<div class="met"><div class="met-l">Organoides vivos</div><div class="met-v">' + oa + '</div></div>'
+    + '<div class="met"><div class="met-l">Experimentos en curso</div><div class="met-v">' + ea + '</div></div>'
+    + '<div class="met"><div class="met-l">Stock bajo/sin stock</div><div class="met-v" style="color:var(--text-danger)">' + rb + '</div></div>'
+    + '<div class="met"><div class="met-l">Protocolos y papers</div><div class="met-v">' + (db.protocolos||[]).length + '</div></div>'
+    + '<div class="met"><div class="met-l">Viales criopreservados</div><div class="met-v">' + (db.viales||[]).length + '</div></div>'
+    + '<div class="met"><div class="met-l">Fotos registradas</div><div class="met-v">' + (db.fotos||[]).length + '</div></div>'
+    + '<div class="met"><div class="met-l">En papelera</div><div class="met-v" style="' + ((db.trash||[]).length ? 'color:var(--text-danger)' : '') + '">' + (db.trash||[]).length + '</div></div>';
+  var dc = document.getElementById('dash-cultivos');
+  if (dc) { dc.innerHTML = (db.cultivos||[]).length ? (db.cultivos||[]).map(function(c){var cc=c.confl>=80?'color:var(--text-danger)':c.confl>=60?'color:var(--text-warning)':'';return '<tr><td>'+c.id+'</td><td><strong>'+c.linea+'</strong></td><td>'+c.pase+'</td><td style="'+cc+'">'+c.confl+'%</td><td>'+badge(c.estado)+'</td></tr>';}).join('') : emptyRow(5,'Sin cultivos'); }
+  var dr = document.getElementById('dash-reactivos');
+  if (dr) { var ar=(db.reactivos||[]).filter(function(r){return r.stock<=0||r.stock<=r.min;}); dr.innerHTML = ar.length ? ar.map(function(r){var s=reactEstado(r);return '<tr><td><strong>'+r.nombre+'</strong></td><td>'+r.stock+'</td><td>'+r.min+'</td><td>'+badge(s)+'</td></tr>';}).join('') : emptyRow(4,'Sin alertas de stock'); }
+}
+
+// ── Cultivos ────────────────────────────────────
+function renderCultivos() {
+  var f = document.getElementById('cult-filter').value;
+  var data = f ? (db.cultivos||[]).filter(function(c){return c.estado===f;}) : (db.cultivos||[]);
+  var tb = document.getElementById('cult-tbody'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = emptyRow(12); return; }
+  data.forEach(function(c) {
+    var ci = db.cultivos.indexOf(c);
+    var cc = c.confl>=80?'color:var(--text-danger);font-weight:500':c.confl>=60?'color:var(--text-warning)':'';
+    var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
+    tr.innerHTML = '<td>'+c.id+'</td><td><strong>'+c.linea+'</strong></td><td>'+c.pase+'</td><td>'+c.medio+'</td><td>'+c.frasco+'</td><td>'+c.fultcambio+'</td><td>'+c.conflcambio+'%</td><td>'+c.frec+'</td><td><span style="'+cc+'">'+c.confl+'%</span></td><td>'+c.resp+'</td><td>'+badge(c.estado)+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="event.stopPropagation();openCultModal('+ci+')">Editar</button><button class="del-btn" onclick="event.stopPropagation();doDelete(\'cultivos\','+ci+')">×</button></div></td>';
+    tr.onclick = function() { openCultModal(ci); };
+    tb.appendChild(tr);
+  });
+}
+function openCultModal(idx) {
+  document.getElementById('cf-idx').value = idx;
+  if (idx >= 0) {
+    var c = db.cultivos[idx];
+    document.getElementById('cult-modal-title').textContent = 'Editar — ' + c.id;
+    document.getElementById('cf-id').value=c.id; document.getElementById('cf-linea').value=c.linea; document.getElementById('cf-pase').value=c.pase; document.getElementById('cf-origen').value=c.origen; document.getElementById('cf-medio').value=c.medio; document.getElementById('cf-frasco').value=c.frasco; document.getElementById('cf-frec').value=c.frec; document.getElementById('cf-fultcambio').value=c.fultcambio; document.getElementById('cf-conflcambio').value=c.conflcambio; document.getElementById('cf-confl').value=c.confl; document.getElementById('cf-resp').value=c.resp; document.getElementById('cf-estado').value=c.estado; document.getElementById('cf-notas').value=c.notas;
+  } else {
+    document.getElementById('cult-modal-title').textContent = 'Nuevo cultivo';
+    ['cf-id','cf-linea','cf-pase','cf-origen','cf-medio','cf-fultcambio','cf-conflcambio','cf-confl','cf-resp','cf-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('cult-modal');
+}
+function saveCultivo() {
+  var idx = parseInt(document.getElementById('cf-idx').value);
+  var c = { id:document.getElementById('cf-id').value, linea:document.getElementById('cf-linea').value, pase:document.getElementById('cf-pase').value, origen:document.getElementById('cf-origen').value, medio:document.getElementById('cf-medio').value, frasco:document.getElementById('cf-frasco').value, frec:document.getElementById('cf-frec').value, fultcambio:document.getElementById('cf-fultcambio').value, conflcambio:parseInt(document.getElementById('cf-conflcambio').value)||0, confl:parseInt(document.getElementById('cf-confl').value)||0, resp:document.getElementById('cf-resp').value, estado:document.getElementById('cf-estado').value, notas:document.getElementById('cf-notas').value };
+  if (idx >= 0) db.cultivos[idx] = c; else db.cultivos.push(c);
+  closeModal('cult-modal'); saveDB(); renderAll();
+}
+
+// ── Organoides ──────────────────────────────────
+function renderOrganoides() {
+  var f = document.getElementById('org-filter').value;
+  var data = f ? (db.organoides||[]).filter(function(o){return o.tejido===f;}) : (db.organoides||[]);
+  var tb = document.getElementById('org-tbody'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = emptyRow(11); return; }
+  var hoy = new Date().toISOString().substring(0,10);
+  data.forEach(function(o) {
+    var oi = db.organoides.indexOf(o);
+    var pc = o.proxcambio && o.proxcambio <= hoy ? 'color:var(--text-danger)' : '';
+    var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
+    tr.innerHTML = '<td>'+o.id+'</td><td><strong>'+o.tejido+'</strong></td><td>'+o.origen+'</td><td>D'+o.dia+'</td><td>'+o.diametro+'</td><td>'+o.ultcambio+'</td><td>'+o.frec+'</td><td><span style="'+pc+'">'+o.proxcambio+'</span></td><td>'+o.resp+'</td><td>'+badge(o.estado)+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="event.stopPropagation();openOrgModal('+oi+')">Editar</button><button class="del-btn" onclick="event.stopPropagation();doDelete(\'organoides\','+oi+')">×</button></div></td>';
+    tr.onclick = function() { openOrgModal(oi); };
+    tb.appendChild(tr);
+  });
+}
+function openOrgModal(idx) {
+  document.getElementById('of-idx').value = idx;
+  if (idx >= 0) {
+    var o = db.organoides[idx];
+    document.getElementById('org-modal-title').textContent = 'Editar — ' + o.id;
+    document.getElementById('of-id').value=o.id; document.getElementById('of-tejido').value=o.tejido; document.getElementById('of-origen').value=o.origen; document.getElementById('of-proto').value=o.proto; document.getElementById('of-dia').value=o.dia; document.getElementById('of-diametro').value=o.diametro; document.getElementById('of-frec').value=o.frec; document.getElementById('of-ultcambio').value=o.ultcambio; document.getElementById('of-proxcambio').value=o.proxcambio; document.getElementById('of-resp').value=o.resp; document.getElementById('of-estado').value=o.estado; document.getElementById('of-notas').value=o.notas;
+  } else {
+    document.getElementById('org-modal-title').textContent = 'Nuevo organoide';
+    ['of-id','of-origen','of-proto','of-dia','of-diametro','of-ultcambio','of-proxcambio','of-resp','of-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('org-modal');
+}
+function saveOrganoide() {
+  var idx = parseInt(document.getElementById('of-idx').value);
+  var o = { id:document.getElementById('of-id').value, tejido:document.getElementById('of-tejido').value, origen:document.getElementById('of-origen').value, proto:document.getElementById('of-proto').value, dia:document.getElementById('of-dia').value, diametro:document.getElementById('of-diametro').value, frec:document.getElementById('of-frec').value, ultcambio:document.getElementById('of-ultcambio').value, proxcambio:document.getElementById('of-proxcambio').value, resp:document.getElementById('of-resp').value, estado:document.getElementById('of-estado').value, notas:document.getElementById('of-notas').value };
+  if (idx >= 0) db.organoides[idx] = o; else db.organoides.push(o);
+  closeModal('org-modal'); saveDB(); renderAll();
+}
+
+// ── Experimentos ────────────────────────────────
+function renderExperimentos() {
+  var f = document.getElementById('exp-filter').value;
+  var data = f ? (db.experimentos||[]).filter(function(e){return e.estado===f;}) : (db.experimentos||[]);
+  var tb = document.getElementById('exp-tbody'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = emptyRow(9); return; }
+  data.forEach(function(e) {
+    var ei = db.experimentos.indexOf(e);
+    var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
+    tr.innerHTML = '<td>'+e.id+'</td><td><strong>'+e.nombre+'</strong></td><td>'+e.modelo+'</td><td>'+e.inicio+'</td><td>'+e.fin+'</td><td>'+e.resp+'</td><td>'+e.tecnicas+'</td><td>'+badge(e.estado)+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="event.stopPropagation();openExpModal('+ei+')">Editar</button><button class="del-btn" onclick="event.stopPropagation();doDelete(\'experimentos\','+ei+')">×</button></div></td>';
+    tr.onclick = function() { openExpModal(ei); };
+    tb.appendChild(tr);
+  });
+}
+function openExpModal(idx) {
+  document.getElementById('ef-idx').value = idx;
+  if (idx >= 0) {
+    var e = db.experimentos[idx];
+    document.getElementById('exp-modal-title').textContent = 'Editar — ' + e.id;
+    document.getElementById('ef-id').value=e.id; document.getElementById('ef-nombre').value=e.nombre; document.getElementById('ef-obj').value=e.obj||''; document.getElementById('ef-modelo').value=e.modelo; document.getElementById('ef-resp').value=e.resp; document.getElementById('ef-inicio').value=e.inicio; document.getElementById('ef-fin').value=e.fin; document.getElementById('ef-tecnicas').value=e.tecnicas; document.getElementById('ef-estado').value=e.estado; document.getElementById('ef-notas').value=e.notas;
+  } else {
+    document.getElementById('exp-modal-title').textContent = 'Nuevo experimento';
+    ['ef-id','ef-nombre','ef-obj','ef-modelo','ef-resp','ef-inicio','ef-fin','ef-tecnicas','ef-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('exp-modal');
+}
+function saveExperimento() {
+  var idx = parseInt(document.getElementById('ef-idx').value);
+  var e = { id:document.getElementById('ef-id').value, nombre:document.getElementById('ef-nombre').value, obj:document.getElementById('ef-obj').value, modelo:document.getElementById('ef-modelo').value, resp:document.getElementById('ef-resp').value, inicio:document.getElementById('ef-inicio').value, fin:document.getElementById('ef-fin').value, tecnicas:document.getElementById('ef-tecnicas').value, estado:document.getElementById('ef-estado').value, notas:document.getElementById('ef-notas').value };
+  if (idx >= 0) db.experimentos[idx] = e; else db.experimentos.push(e);
+  closeModal('exp-modal'); saveDB(); renderAll();
+}
+
+// ── Reactivos ───────────────────────────────────
+function renderReactivos() {
+  var f = document.getElementById('react-filter').value;
+  var data = (db.reactivos||[]).filter(function(r){if(!f)return true;return reactEstado(r)===f;});
+  var tb = document.getElementById('react-tbody'); tb.innerHTML = '';
+  var total=(db.reactivos||[]).length, bajo=0, cad30=0;
+  var en30=new Date(); en30.setDate(en30.getDate()+30);
+  (db.reactivos||[]).forEach(function(r){if(r.stock<=0||r.stock<=r.min)bajo++;if(r.cad&&new Date(r.cad)<=en30)cad30++;});
+  document.getElementById('react-total').textContent = total;
+  document.getElementById('react-bajo').textContent = bajo;
+  document.getElementById('react-cad').textContent = cad30;
+  if (!data.length) { tb.innerHTML = emptyRow(10); return; }
+  data.forEach(function(r) {
+    var ri = db.reactivos.indexOf(r);
+    var s = reactEstado(r); var sb2 = s==='Sin stock'?'br':s==='Stock bajo'?'ba':'bg';
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><strong>'+r.nombre+'</strong></td><td>'+r.cat+'</td><td>'+r.prov+'</td><td>'+r.stock+'</td><td>'+r.min+'</td><td>'+r.unidad+'</td><td>'+(r.cad||'—')+'</td><td>'+r.ubic+'</td><td><span class="badge '+sb2+'">'+s+'</span></td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="openReactModal('+ri+')">Editar</button><button class="del-btn" onclick="doDelete(\'reactivos\','+ri+')">×</button></div></td>';
+    tb.appendChild(tr);
+  });
+}
+function openReactModal(idx) {
+  document.getElementById('rf-idx').value = idx;
+  if (idx >= 0) {
+    var r = db.reactivos[idx];
+    document.getElementById('react-modal-title').textContent = 'Editar — ' + r.nombre;
+    document.getElementById('rf-nombre').value=r.nombre; document.getElementById('rf-cat').value=r.cat; document.getElementById('rf-prov').value=r.prov; document.getElementById('rf-lote').value=r.lote; document.getElementById('rf-stock').value=r.stock; document.getElementById('rf-min').value=r.min; document.getElementById('rf-unidad').value=r.unidad; document.getElementById('rf-ubic').value=r.ubic; document.getElementById('rf-cad').value=r.cad||''; document.getElementById('rf-cat2').value=r.cat2; document.getElementById('rf-notas').value=r.notas;
+  } else {
+    document.getElementById('react-modal-title').textContent = 'Nuevo reactivo';
+    ['rf-nombre','rf-cat','rf-prov','rf-lote','rf-stock','rf-min','rf-cad','rf-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('react-modal');
+}
+function saveReactivo() {
+  var idx = parseInt(document.getElementById('rf-idx').value);
+  var r = { nombre:document.getElementById('rf-nombre').value, cat:document.getElementById('rf-cat').value, prov:document.getElementById('rf-prov').value, lote:document.getElementById('rf-lote').value, stock:parseFloat(document.getElementById('rf-stock').value)||0, min:parseFloat(document.getElementById('rf-min').value)||0, unidad:document.getElementById('rf-unidad').value, ubic:document.getElementById('rf-ubic').value, cad:document.getElementById('rf-cad').value, cat2:document.getElementById('rf-cat2').value, notas:document.getElementById('rf-notas').value };
+  if (idx >= 0) db.reactivos[idx] = r; else db.reactivos.push(r);
+  closeModal('react-modal'); saveDB(); renderAll();
+}
+
+// ── Viales ──────────────────────────────────────
+function renderViales() {
+  var tb = document.getElementById('vial-tbody'); if (!tb) return; tb.innerHTML = '';
+  var typeMap = {'Cultivo celular':'bb','Organoide':'bp','Tejido primario':'bgr','Reactivo':'ba'};
+  var almacenes = {'Tank-A (N₂)':0,'Tank-B (N₂)':0,'ULT-1 (-80°C)':0,'-20°C':0};
+  (db.viales||[]).forEach(function(v){if(almacenes[v.almacen]!==undefined)almacenes[v.almacen]+=parseInt(v.nviales)||0;});
+  var cards = document.getElementById('almacen-cards');
+  if (cards) {
+    var defs = [{k:'Tank-A (N₂)',l:'Tank-A — N₂',t:'−196°C',n:'72%',p:72,c:'#1d9e75'},{k:'Tank-B (N₂)',l:'Tank-B — N₂',t:'−196°C',n:'28% ⚠',p:28,c:'#ef9f27'},{k:'ULT-1 (-80°C)',l:'ULT-1 — −80°C',t:'−81.2°C',n:'55%',p:55,c:'#1d9e75'},{k:'-20°C',l:'Cryo-Box −20°C',t:'−19.8°C',n:'40%',p:40,c:'#1d9e75'}];
+    cards.innerHTML = defs.map(function(a){return '<div class="alm-card"><div style="font-size:12px;font-weight:500;color:var(--text-primary)">'+a.l+'</div><div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px">'+a.t+'</div><div class="prog-bar"><div class="prog-bar-fill" style="width:'+a.p+'%;background:'+a.c+'"></div></div><div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text-secondary)">Nivel</span><span>'+a.n+'</span></div><div style="display:flex;justify-content:space-between;font-size:11px;border-top:.5px solid var(--border-tertiary);padding-top:3px;margin-top:3px"><span style="color:var(--text-secondary)">Viales</span><span>'+(almacenes[a.k]||0)+'</span></div></div>';}).join('');
+  }
+  if (!(db.viales||[]).length) { tb.innerHTML = emptyRow(10); return; }
+  (db.viales||[]).forEach(function(v, idx) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+v.id+'</td><td><span class="badge '+(typeMap[v.tipo]||'bgr')+'">'+v.tipo+'</span></td><td>'+v.linea+'</td><td>'+v.pase+'</td><td>'+v.almacen+'</td><td>'+v.pos+'</td><td>'+v.nviales+'</td><td>'+v.crio+'</td><td>'+v.fecha+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="openVialModal('+idx+')">Editar</button><button class="del-btn" onclick="doDelete(\'viales\','+idx+')">×</button></div></td>';
+    tb.appendChild(tr);
+  });
+}
+function openVialModal(idx) {
+  document.getElementById('vf-idx').value = idx;
+  if (idx >= 0) {
+    var v = db.viales[idx];
+    document.getElementById('vf-id').value=v.id; document.getElementById('vf-tipo').value=v.tipo; document.getElementById('vf-linea').value=v.linea; document.getElementById('vf-pase').value=v.pase; document.getElementById('vf-nviales').value=v.nviales; document.getElementById('vf-crio').value=v.crio; document.getElementById('vf-almacen').value=v.almacen; document.getElementById('vf-pos').value=v.pos; document.getElementById('vf-fecha').value=v.fecha; document.getElementById('vf-resp').value=v.resp; document.getElementById('vf-notas').value=v.notas;
+  } else {
+    ['vf-id','vf-linea','vf-pase','vf-nviales','vf-crio','vf-pos','vf-fecha','vf-resp','vf-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('vial-modal');
+}
+function saveVial() {
+  var idx = parseInt(document.getElementById('vf-idx').value);
+  var v = { id:document.getElementById('vf-id').value, tipo:document.getElementById('vf-tipo').value, linea:document.getElementById('vf-linea').value, pase:document.getElementById('vf-pase').value, nviales:parseInt(document.getElementById('vf-nviales').value)||1, crio:document.getElementById('vf-crio').value, almacen:document.getElementById('vf-almacen').value, pos:document.getElementById('vf-pos').value, fecha:document.getElementById('vf-fecha').value, resp:document.getElementById('vf-resp').value, notas:document.getElementById('vf-notas').value };
+  if (idx >= 0) db.viales[idx] = v; else db.viales.push(v);
+  closeModal('vial-modal'); saveDB(); renderAll();
+}
+
+// ── Protocolos ──────────────────────────────────
+function renderProtocolos() {
+  var f = document.getElementById('proto-filter').value;
+  var q = (document.getElementById('proto-search').value||'').toLowerCase();
+  var data = (db.protocolos||[]).filter(function(p){return(!f||p.tipo===f)&&(!q||(p.titulo||'').toLowerCase().includes(q)||(p.autor||'').toLowerCase().includes(q)||(p.tags||'').toLowerCase().includes(q));});
+  var tb = document.getElementById('proto-tbody'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = emptyRow(8); return; }
+  var tc = {'SOP':'bt','Protocolo':'bb','Paper':'bp','Guía':'bg','Otro':'bgr'};
+  data.forEach(function(p) {
+    var pi = db.protocolos.indexOf(p);
+    var doi = p.doi ? '<a href="'+(p.doi.startsWith('http')?p.doi:'https://doi.org/'+p.doi)+'" style="color:var(--text-info);font-size:11px" onclick="event.stopPropagation()" target="_blank">'+p.autor+'</a>' : p.autor;
+    var tr = document.createElement('tr'); tr.style.cursor = 'pointer';
+    tr.innerHTML = '<td><span class="badge '+(tc[p.tipo]||'bgr')+'">'+p.tipo+'</span></td><td>'+p.id+'</td><td title="'+p.titulo+'">'+p.titulo+'</td><td>'+doi+'</td><td>'+p.version+'</td><td>'+p.cat+'</td><td>'+badge(p.estado)+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="event.stopPropagation();openProtoModal('+pi+')">Editar</button><button class="del-btn" onclick="event.stopPropagation();doDelete(\'protocolos\','+pi+')">×</button></div></td>';
+    tr.onclick = function() { openProtoModal(pi); };
+    tb.appendChild(tr);
+  });
+}
+function openProtoModal(idx) {
+  document.getElementById('pf-idx').value = idx;
+  if (idx >= 0) {
+    var p = db.protocolos[idx];
+    document.getElementById('proto-modal-title').textContent = 'Editar — ' + p.id;
+    document.getElementById('pf-tipo').value=p.tipo; document.getElementById('pf-id').value=p.id; document.getElementById('pf-titulo').value=p.titulo; document.getElementById('pf-autor').value=p.autor; document.getElementById('pf-version').value=p.version; document.getElementById('pf-cat').value=p.cat; document.getElementById('pf-doi').value=p.doi; document.getElementById('pf-tags').value=p.tags; document.getElementById('pf-estado').value=p.estado; document.getElementById('pf-notas').value=p.notas;
+  } else {
+    document.getElementById('proto-modal-title').textContent = 'Nuevo documento';
+    ['pf-id','pf-titulo','pf-autor','pf-version','pf-doi','pf-tags','pf-notas'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('proto-modal');
+}
+function saveProtocolo() {
+  var idx = parseInt(document.getElementById('pf-idx').value);
+  var p = { tipo:document.getElementById('pf-tipo').value, id:document.getElementById('pf-id').value, titulo:document.getElementById('pf-titulo').value, autor:document.getElementById('pf-autor').value, version:document.getElementById('pf-version').value, cat:document.getElementById('pf-cat').value, doi:document.getElementById('pf-doi').value, tags:document.getElementById('pf-tags').value, estado:document.getElementById('pf-estado').value, notas:document.getElementById('pf-notas').value };
+  if (idx >= 0) db.protocolos[idx] = p; else db.protocolos.push(p);
+  closeModal('proto-modal'); saveDB(); renderAll();
+}
+
+// ── Fotos ───────────────────────────────────────
+function renderFotos() {
+  var f = document.getElementById('foto-filter').value;
+  var q = (document.getElementById('foto-search').value||'').toLowerCase();
+  var data = (db.fotos||[]).filter(function(p){return(!f||p.tipo.includes(f))&&(!q||(p.id||'').toLowerCase().includes(q)||(p.muestra||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q));});
+  var tb = document.getElementById('foto-tbody'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = emptyRow(10); return; }
+  data.forEach(function(f) {
+    var fi = db.fotos.indexOf(f);
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+f.id+'</td><td><span class="badge bb" style="font-size:9px">'+f.tipo.split(' ')[0]+'</span></td><td>'+f.muestra+'</td><td>'+f.equipo+'</td><td>'+f.obj+'</td><td>'+f.canales+'</td><td>'+f.fecha+'</td><td>'+f.resp+'</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="'+f.desc+'">'+f.desc+'</td><td><div style="display:flex;gap:3px"><button class="act-btn" onclick="openFotoModal('+fi+')">Editar</button><button class="del-btn" onclick="doDelete(\'fotos\','+fi+')">×</button></div></td>';
+    tb.appendChild(tr);
+  });
+}
+function openFotoModal(idx) {
+  document.getElementById('ff-idx').value = idx;
+  if (idx >= 0) {
+    var f = db.fotos[idx];
+    document.getElementById('foto-modal-title').textContent = 'Editar — ' + f.id;
+    document.getElementById('ff-id').value=f.id; document.getElementById('ff-tipo').value=f.tipo; document.getElementById('ff-muestra').value=f.muestra; document.getElementById('ff-exp').value=f.exp; document.getElementById('ff-equipo').value=f.equipo; document.getElementById('ff-obj').value=f.obj; document.getElementById('ff-canales').value=f.canales; document.getElementById('ff-fecha').value=f.fecha; document.getElementById('ff-resp').value=f.resp; document.getElementById('ff-ruta').value=f.ruta; document.getElementById('ff-desc').value=f.desc;
+  } else {
+    document.getElementById('foto-modal-title').textContent = 'Nueva fotografía';
+    ['ff-id','ff-muestra','ff-exp','ff-equipo','ff-obj','ff-canales','ff-fecha','ff-resp','ff-ruta','ff-desc'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  openModal('foto-modal');
+}
+function saveFoto() {
+  var idx = parseInt(document.getElementById('ff-idx').value);
+  var f = { id:document.getElementById('ff-id').value, tipo:document.getElementById('ff-tipo').value, muestra:document.getElementById('ff-muestra').value, exp:document.getElementById('ff-exp').value, equipo:document.getElementById('ff-equipo').value, obj:document.getElementById('ff-obj').value, canales:document.getElementById('ff-canales').value, fecha:document.getElementById('ff-fecha').value, resp:document.getElementById('ff-resp').value, ruta:document.getElementById('ff-ruta').value, desc:document.getElementById('ff-desc').value };
+  if (idx >= 0) db.fotos[idx] = f; else db.fotos.unshift(f);
+  closeModal('foto-modal'); saveDB(); renderAll();
+}
+
+// ── Cuaderno ────────────────────────────────────
+function renderJournal() {
+  var f = document.getElementById('journal-filter').value;
+  var q = (document.getElementById('journal-search').value||'').toLowerCase();
+  var data = (db.journal||[]).filter(function(j){return(!f||j.cat===f)&&(!q||(j.titulo||'').toLowerCase().includes(q)||(j.body||'').toLowerCase().includes(q)||(j.tags||'').toLowerCase().includes(q));});
+  var list = document.getElementById('journal-list'); list.innerHTML = '';
+  var catBadge = {Observación:'bb',Resultado:'bg',Incidencia:'br',Idea:'bp',Reunión:'bgr',Otro:'bgr'};
+  if (!data.length) { list.innerHTML = '<div class="empty-state">Sin entradas. Pulsa "+ Nueva entrada" para comenzar.</div>'; return; }
+  data.forEach(function(j) {
+    var ji = db.journal.indexOf(j);
+    var tags = (j.tags||'').split(',').map(function(t){return t.trim();}).filter(Boolean).map(function(t){return '<span class="badge bgr" style="font-size:9px;padding:1px 4px">'+t+'</span>';}).join('');
+    var dateStr = new Date(j.fecha).toLocaleString('es-ES',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    var d = document.createElement('div'); d.className = 'journal-entry';
+    d.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div><div class="je-title">'+j.titulo+'</div><div class="je-meta">'+dateStr+' · '+j.autor+' · <span class="badge '+(catBadge[j.cat]||'bgr')+'" style="font-size:9px">'+j.cat+'</span></div></div><div style="display:flex;gap:4px;flex-shrink:0"><button class="act-btn" onclick="event.stopPropagation();openJournalEditor('+ji+')">Editar</button><button class="del-btn" onclick="event.stopPropagation();doDelete(\'journal\','+ji+')">×</button></div></div><div class="je-body-preview">'+j.body+'</div><div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap">'+tags+'</div>';
+    list.appendChild(d);
+  });
+}
+function openJournalEditor(idx) {
+  document.getElementById('je-idx').value = idx;
+  if (idx >= 0) { var j=db.journal[idx]; document.getElementById('je-titulo').value=j.titulo; document.getElementById('je-body').value=j.body; document.getElementById('je-cat').value=j.cat; document.getElementById('je-tags').value=j.tags; document.getElementById('je-autor').value=j.autor; }
+  else { document.getElementById('je-titulo').value=''; document.getElementById('je-body').value=''; document.getElementById('je-tags').value=''; document.getElementById('je-autor').value=db.settings&&db.settings.pi||''; }
+  document.getElementById('je-editor').classList.add('open');
+  document.getElementById('je-titulo').focus();
+}
+function closeJournalEditor() { document.getElementById('je-editor').classList.remove('open'); }
+function saveJournalEntry() {
+  var idx = parseInt(document.getElementById('je-idx').value);
+  var j = { titulo:document.getElementById('je-titulo').value||'Entrada sin título', cat:document.getElementById('je-cat').value, body:document.getElementById('je-body').value, tags:document.getElementById('je-tags').value, autor:document.getElementById('je-autor').value, fecha:new Date().toISOString() };
+  if (idx >= 0) db.journal[idx] = j; else db.journal.unshift(j);
+  closeJournalEditor(); saveDB(); renderJournal();
+}
+
+// ── IO ──────────────────────────────────────────
+function setFmt(f,btn){exportFmt=f;document.querySelectorAll('.fmt-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');}
+function setImportMode(m,btn){importMode=m;document.querySelectorAll('#s-io .fmt-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');}
+function addLog(id,msg,cls){var p=document.getElementById(id);p.classList.add('vis');var l=document.createElement('div');l.className=cls||'';l.textContent=msg;p.appendChild(l);p.scrollTop=p.scrollHeight;}
+function setProgress(id,pct){var w=document.getElementById(id+'-wrap');var f2=document.getElementById(id+'-fill');if(w)w.classList.add('vis');if(f2)f2.style.width=pct+'%';}
+
+var SCHEMAS = {
+  cultivos:{sheet:'Cultivos',cols:['ID','Línea celular','Pase actual','Cultivo de origen','Medio de cultivo','Tipo de frasco','Frec. cambio medio','Fecha últ. cambio','Confl. en últ. cambio (%)','Confluencia actual (%)','Responsable último pase','Estado','Notas'],toRow:function(c){return[c.id,c.linea,c.pase,c.origen,c.medio,c.frasco,c.frec,c.fultcambio,c.conflcambio,c.confl,c.resp,c.estado,c.notas];},fromRow:function(r){return{id:r[0]||'',linea:r[1]||'',pase:r[2]||'',origen:r[3]||'',medio:r[4]||'',frasco:r[5]||'',frec:r[6]||'',fultcambio:r[7]||'',conflcambio:parseFloat(r[8])||0,confl:parseFloat(r[9])||0,resp:r[10]||'',estado:r[11]||'Activo',notas:r[12]||''};} },
+  organoides:{sheet:'Organoides',cols:['ID','Tipo de tejido','Origen celular','Protocolo','Día cultivo','Diámetro','Frec. cambio medio','Últ. cambio','Próximo cambio','Responsable','Estado','Notas'],toRow:function(o){return[o.id,o.tejido,o.origen,o.proto,o.dia,o.diametro,o.frec,o.ultcambio,o.proxcambio,o.resp,o.estado,o.notas];},fromRow:function(r){return{id:r[0]||'',tejido:r[1]||'',origen:r[2]||'',proto:r[3]||'',dia:r[4]||'',diametro:r[5]||'',frec:r[6]||'',ultcambio:r[7]||'',proxcambio:r[8]||'',resp:r[9]||'',estado:r[10]||'Activo',notas:r[11]||''};} },
+  experimentos:{sheet:'Experimentos',cols:['ID','Nombre','Objetivo','Modelo celular','Responsable','Fecha inicio','Fecha fin','Técnicas','Estado','Notas'],toRow:function(e){return[e.id,e.nombre,e.obj||'',e.modelo,e.resp,e.inicio,e.fin,e.tecnicas,e.estado,e.notas];},fromRow:function(r){return{id:r[0]||'',nombre:r[1]||'',obj:r[2]||'',modelo:r[3]||'',resp:r[4]||'',inicio:r[5]||'',fin:r[6]||'',tecnicas:r[7]||'',estado:r[8]||'Planificado',notas:r[9]||''};} },
+  reactivos:{sheet:'Reactivos',cols:['Nombre','Nº catálogo','Proveedor','Lote','Categoría','Stock actual','Stock mínimo','Unidad','Ubicación','Fecha caducidad','Notas'],toRow:function(r){return[r.nombre,r.cat,r.prov,r.lote,r.cat2,r.stock,r.min,r.unidad,r.ubic,r.cad,r.notas];},fromRow:function(r){return{nombre:r[0]||'',cat:r[1]||'',prov:r[2]||'',lote:r[3]||'',cat2:r[4]||'',stock:parseFloat(r[5])||0,min:parseFloat(r[6])||0,unidad:r[7]||'',ubic:r[8]||'',cad:r[9]||'',notas:r[10]||''};} },
+  viales:{sheet:'Almacen',cols:['ID muestra','Tipo','Línea','Pase/Día','Almacén','Posición','Nº viales','Crioprotector','Fecha','Realizado por','Notas'],toRow:function(v){return[v.id,v.tipo,v.linea,v.pase,v.almacen,v.pos,v.nviales,v.crio,v.fecha,v.resp,v.notas];},fromRow:function(r){return{id:r[0]||'',tipo:r[1]||'',linea:r[2]||'',pase:r[3]||'',almacen:r[4]||'',pos:r[5]||'',nviales:parseInt(r[6])||1,crio:r[7]||'',fecha:r[8]||'',resp:r[9]||'',notas:r[10]||''};} },
+  protocolos:{sheet:'Protocolos',cols:['Tipo','ID','Título','Autor','Versión/Año','Categoría','DOI/URL','Palabras clave','Estado','Notas'],toRow:function(p){return[p.tipo,p.id,p.titulo,p.autor,p.version,p.cat,p.doi,p.tags,p.estado,p.notas];},fromRow:function(r){return{tipo:r[0]||'SOP',id:r[1]||'',titulo:r[2]||'',autor:r[3]||'',version:r[4]||'',cat:r[5]||'',doi:r[6]||'',tags:r[7]||'',estado:r[8]||'Vigente',notas:r[9]||''};} },
+  fotos:{sheet:'Fotos',cols:['ID','Tipo','Muestra','Experimento','Equipo','Objetivo','Canales','Fecha','Por','Ruta','Descripción'],toRow:function(f){return[f.id,f.tipo,f.muestra,f.exp,f.equipo,f.obj,f.canales,f.fecha,f.resp,f.ruta,f.desc];},fromRow:function(r){return{id:r[0]||'',tipo:r[1]||'',muestra:r[2]||'',exp:r[3]||'',equipo:r[4]||'',obj:r[5]||'',canales:r[6]||'',fecha:r[7]||'',resp:r[8]||'',ruta:r[9]||'',desc:r[10]||''};} },
+  journal:{sheet:'Cuaderno',cols:['Fecha','Categoría','Título','Contenido','Etiquetas','Autor'],toRow:function(j){return[j.fecha.substring(0,10),j.cat,j.titulo,j.body,j.tags,j.autor];},fromRow:function(r){return{fecha:r[0]?r[0]+'T00:00':new Date().toISOString(),cat:r[1]||'Observación',titulo:r[2]||'',body:r[3]||'',tags:r[4]||'',autor:r[5]||''};} }
+};
+
+function runExport() {
+  var mods = []; document.querySelectorAll('#export-modules input:checked').forEach(function(cb){mods.push(cb.value);});
+  if (!mods.length) { alert('Selecciona al menos un módulo.'); return; }
+  document.getElementById('export-log').innerHTML = '';
+  setProgress('ep', 5);
+  var wb = XLSX.utils.book_new();
+  var idx = [['LabTracker v6 — Exportación'],['Fecha: '+new Date().toLocaleString('es-ES')],[''],['Módulo','Registros','Hoja']];
+  var total = 0;
+  mods.forEach(function(m) {
+    var s = SCHEMAS[m]; if (!s) return;
+    idx.push([m,(db[m]||[]).length,s.sheet]);
+    var aoa = [s.cols]; (db[m]||[]).forEach(function(item){try{aoa.push(s.toRow(item));}catch(e){}});
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!autofilter'] = {ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:s.cols.length-1}})};
+    XLSX.utils.book_append_sheet(wb, ws, s.sheet);
+    total += (db[m]||[]).length;
+    setProgress('ep', 5 + Math.round(85/mods.length*(mods.indexOf(m)+1)));
+    addLog('export-log', '✓ '+s.sheet+' — '+(db[m]||[]).length+' registros', 'log-ok');
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(idx), 'Inicio');
+  var ts = new Date().toISOString().substring(0,10);
+  if (exportFmt === 'csv') {
+    var ws2 = wb.Sheets[wb.SheetNames[0]];
+    var csv = XLSX.utils.sheet_to_csv(ws2);
+    var blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href=url; a.download='LabTracker_'+ts+'.csv'; a.click(); URL.revokeObjectURL(url);
+  } else {
+    XLSX.writeFile(wb, 'LabTracker_'+ts+'.xlsx');
+  }
+  setProgress('ep', 100);
+  addLog('export-log', 'Listo — '+total+' registros en '+mods.length+' hojas', 'log-info');
+}
+
+function handleImport(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  document.getElementById('import-log').innerHTML = ''; document.getElementById('import-actions').style.display = 'none'; pendingImportData = null;
+  setProgress('ip', 10); addLog('import-log', 'Leyendo: '+file.name, 'log-info');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      setProgress('ip', 40);
+      var imported = {}; var total = 0; var warns = [];
+      wb.SheetNames.forEach(function(name) {
+        var matched = null;
+        Object.keys(SCHEMAS).forEach(function(k){if(SCHEMAS[k].sheet===name)matched=k;});
+        if (!matched) { if (name!=='Inicio') warns.push('Hoja "'+name+'" no reconocida'); return; }
+        var aoa = XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
+        var rows = aoa.slice(1).filter(function(r){return r.some(function(c){return c!=='';});});
+        var parsed = []; rows.forEach(function(r,i){try{parsed.push(SCHEMAS[matched].fromRow(r));}catch(err){warns.push('Error fila '+(i+2)+' en '+name);}});
+        imported[matched] = parsed; total += parsed.length;
+        addLog('import-log', '✓ '+name+' — '+parsed.length+' registros', 'log-ok');
+      });
+      warns.forEach(function(w){addLog('import-log','⚠ '+w,'log-warn');});
+      pendingImportData = imported;
+      document.getElementById('import-actions').style.display = 'flex';
+      setProgress('ip', 100);
+      addLog('import-log', total+' registros listos — confirma para importar', 'log-info');
+    } catch(err) { addLog('import-log', 'Error: '+err.message, 'log-err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function confirmImport() {
+  if (!pendingImportData) return;
+  Object.keys(pendingImportData).forEach(function(mod) {
+    var recs = pendingImportData[mod];
+    if (importMode === 'replace') { db[mod] = recs; addLog('import-log','✓ '+mod+' reemplazado — '+recs.length+' registros','log-ok'); }
+    else {
+      if (!db[mod]) db[mod] = [];
+      var eIds = {}; db[mod].forEach(function(r){var k=r.id||r.nombre||r.titulo;if(k)eIds[k]=true;});
+      var added=0,skipped=0;
+      recs.forEach(function(r){var k=r.id||r.nombre||r.titulo;if(k&&eIds[k])skipped++;else{db[mod].push(r);if(k)eIds[k]=true;added++;}});
+      addLog('import-log','✓ '+mod+' — '+added+' añadidos, '+skipped+' omitidos','log-ok');
+    }
+  });
+  saveDB(); renderAll(); pendingImportData = null;
+  document.getElementById('import-actions').style.display = 'none';
+  addLog('import-log','Importación completada','log-info');
+}
+
+function cancelImport() {
+  pendingImportData = null;
+  document.getElementById('import-actions').style.display = 'none';
+  document.getElementById('xlsx-input').value = '';
+}
+
+function exportJSON() {
+  var blob = new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href=url; a.download='LabTracker_backup_'+new Date().toISOString().substring(0,10)+'.json'; a.click(); URL.revokeObjectURL(url);
+}
+
+function handleJSONImport(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var imported = JSON.parse(e.target.result);
+      if (confirm('¿Importar datos del JSON? Esto reemplazará los datos actuales.')) {
+        Object.assign(db, imported); saveDB(); applySettings(); renderAll(); alert('Datos importados correctamente.');
+      }
+    } catch(err) { alert('Error al leer el archivo JSON.'); }
+  };
+  reader.readAsText(input.files[0]);
+}
+
+function confirmResetAll() {
+  askPerm('TODOS los datos de LabTracker', function() {
+    db = {cultivos:[],organoides:[],experimentos:[],reactivos:[],viales:[],protocolos:[],fotos:[],journal:[],trash:[],settings:{}};
+    saveDB(); renderAll(); alert('Todos los datos han sido eliminados.');
+  });
+}
+
+// ── Init ────────────────────────────────────────
+loadDB();
+</script>
+</body>
+</html>
